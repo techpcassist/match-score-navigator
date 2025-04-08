@@ -136,18 +136,36 @@ export class DatabaseHandler {
     matchScore: number, 
     analysisReport: any
   ): Promise<ComparisonData> {
-    const { data, error } = await this.supabase
-      .from('comparisons')
-      .insert([{ 
-        resume_id: resumeId,
-        job_description_id: jobDescriptionId,
-        match_score: matchScore,
-        analysis_report: analysisReport
-      }])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await this.supabase
+        .from('comparisons')
+        .insert([{ 
+          resume_id: resumeId,
+          job_description_id: jobDescriptionId,
+          match_score: matchScore,
+          analysis_report: analysisReport
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      // Check if this is a duplicate key error
+      if (error.code === '23505') {
+        // Get the existing comparison instead
+        const { data, error: fetchError } = await this.supabase
+          .from('comparisons')
+          .select('*')
+          .eq('resume_id', resumeId)
+          .eq('job_description_id', jobDescriptionId)
+          .single();
+        
+        if (fetchError) throw fetchError;
+        return data;
+      }
+      
+      throw error;
+    }
   }
 }

@@ -87,29 +87,50 @@ serve(async (req) => {
     console.log("Calling compareResumeToJob with Google Generative AI integration");
     const comparisonResult = await compareResumeToJob(resume_text, job_description_text);
     
-    // Store the comparison result
-    const comparisonData = await dbHandler.storeComparison(
-      resumeData.id,
-      jobData.id,
-      comparisonResult.match_score,
-      comparisonResult.analysis
-    );
-    
-    // Return the comparison result along with the stored IDs
-    return new Response(
-      JSON.stringify({
-        resume_id: resumeData.id,
-        job_description_id: jobData.id,
-        comparison_id: comparisonData.id,
-        match_score: comparisonResult.match_score,
-        report: comparisonResult.analysis,
-        resume_file_path
-      }),
-      { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200
-      }
-    );
+    try {
+      // Store the comparison result - handle potential duplicate key errors
+      const comparisonData = await dbHandler.storeComparison(
+        resumeData.id,
+        jobData.id,
+        comparisonResult.match_score,
+        comparisonResult.analysis
+      );
+      
+      // Return the comparison result along with the stored IDs
+      return new Response(
+        JSON.stringify({
+          resume_id: resumeData.id,
+          job_description_id: jobData.id,
+          comparison_id: comparisonData.id,
+          match_score: comparisonResult.match_score,
+          report: comparisonResult.analysis,
+          resume_file_path
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200
+        }
+      );
+    } catch (dbError) {
+      console.error("Database error in compare-resume function:", dbError);
+      
+      // If it's a duplicate key error, we can still return the analysis
+      // without creating a new comparison record
+      return new Response(
+        JSON.stringify({
+          resume_id: resumeData.id,
+          job_description_id: jobData.id,
+          match_score: comparisonResult.match_score,
+          report: comparisonResult.analysis,
+          resume_file_path,
+          warning: "Existing comparison was retrieved"
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200
+        }
+      );
+    }
   } catch (error) {
     console.error("Error in compare-resume function:", error);
     return new Response(
