@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import InputCard from '@/components/InputCard';
@@ -15,6 +15,10 @@ const Index = () => {
   const [jobDescriptionFile, setJobDescriptionFile] = useState<File | null>(null);
   const [report, setReport] = useState<any | null>(null);
   const [resumeFilePath, setResumeFilePath] = useState<string | null>(null);
+  const [lastResumeText, setLastResumeText] = useState<string>('');
+  const [lastJobText, setLastJobText] = useState<string>('');
+  const [lastResumeId, setLastResumeId] = useState<string | null>(null);
+  const [lastJobId, setLastJobId] = useState<string | null>(null);
 
   const handleScan = async () => {
     // Check if we have enough input to analyze
@@ -34,6 +38,8 @@ const Index = () => {
       let finalResumeText = resumeText;
       let finalJobText = jobDescriptionText;
       let storedFilePath: string | null = resumeFilePath;
+      let resumeId: string | null = null;
+      let jobId: string | null = null;
       
       // If files were uploaded, extract their text
       if (resumeFile) {
@@ -57,18 +63,38 @@ const Index = () => {
         finalJobText = await extractTextFromFile(jobDescriptionFile);
       }
       
+      // Check if resume text has changed from last submission
+      if (finalResumeText === lastResumeText && lastResumeId) {
+        resumeId = lastResumeId;
+        console.log("Using existing resume ID:", resumeId);
+      }
+      
+      // Check if job description text has changed from last submission
+      if (finalJobText === lastJobText && lastJobId) {
+        jobId = lastJobId;
+        console.log("Using existing job ID:", jobId);
+      }
+      
       // Call our Supabase Edge Function to perform the comparison
       const { data, error } = await supabase.functions.invoke('compare-resume', {
         body: {
           resume_text: finalResumeText,
           job_description_text: finalJobText,
-          resume_file_path: storedFilePath
+          resume_file_path: storedFilePath,
+          resume_id: resumeId,
+          job_id: jobId
         }
       });
       
       if (error) {
         throw new Error(error.message);
       }
+      
+      // Update last submitted texts and IDs
+      setLastResumeText(finalResumeText);
+      setLastJobText(finalJobText);
+      setLastResumeId(data.resume_id);
+      setLastJobId(data.job_description_id);
       
       // Update state with the response
       setMatchScore(data.match_score);

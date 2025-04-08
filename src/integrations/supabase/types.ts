@@ -72,16 +72,19 @@ export type Database = {
       resumes: {
         Row: {
           created_at: string
+          file_path: string | null
           id: string
           resume_text: string
         }
         Insert: {
           created_at?: string
+          file_path?: string | null
           id?: string
           resume_text: string
         }
         Update: {
           created_at?: string
+          file_path?: string | null
           id?: string
           resume_text?: string
         }

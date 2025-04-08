@@ -16,7 +16,13 @@ serve(async (req) => {
   }
   
   try {
-    const { resume_text, job_description_text, resume_file_path } = await req.json();
+    const { 
+      resume_text, 
+      job_description_text, 
+      resume_file_path,
+      resume_id,
+      job_id
+    } = await req.json();
     
     // Validate inputs
     if (!resume_text || !job_description_text) {
@@ -35,10 +41,47 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
     const dbHandler = new DatabaseHandler(supabaseUrl, supabaseKey);
-
-    // Store data in database
-    const resumeData = await dbHandler.storeResume(resume_text, resume_file_path);
-    const jobData = await dbHandler.storeJobDescription(job_description_text);
+    
+    let resumeData;
+    let jobData;
+    
+    // Check if provided resume_id exists and use it
+    if (resume_id) {
+      resumeData = await dbHandler.getResumeById(resume_id);
+      console.log("Using existing resume ID:", resume_id);
+    }
+    
+    // If resume_id was not provided or not found, check if same text exists
+    if (!resumeData) {
+      resumeData = await dbHandler.findResumeByText(resume_text);
+      if (resumeData) {
+        console.log("Found resume with matching text");
+      }
+    }
+    
+    // If still no match, store as new resume
+    if (!resumeData) {
+      resumeData = await dbHandler.storeResume(resume_text, resume_file_path);
+      console.log("Created new resume with ID:", resumeData.id);
+    }
+    
+    // Same process for job description
+    if (job_id) {
+      jobData = await dbHandler.getJobById(job_id);
+      console.log("Using existing job ID:", job_id);
+    }
+    
+    if (!jobData) {
+      jobData = await dbHandler.findJobByText(job_description_text);
+      if (jobData) {
+        console.log("Found job description with matching text");
+      }
+    }
+    
+    if (!jobData) {
+      jobData = await dbHandler.storeJobDescription(job_description_text);
+      console.log("Created new job description with ID:", jobData.id);
+    }
     
     // Perform the comparison
     const comparisonResult = compareResumeToJob(resume_text, job_description_text);

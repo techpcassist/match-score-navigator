@@ -31,6 +31,70 @@ export class DatabaseHandler {
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
+  // Find existing resume by text content
+  async findResumeByText(resumeText: string): Promise<ResumeData | null> {
+    const { data, error } = await this.supabase
+      .from('resumes')
+      .select('*')
+      .eq('resume_text', resumeText)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error finding resume:', error);
+      return null;
+    }
+    
+    return data;
+  }
+
+  // Find existing job description by text content
+  async findJobByText(jobText: string): Promise<JobData | null> {
+    const { data, error } = await this.supabase
+      .from('job_descriptions')
+      .select('*')
+      .eq('description_text', jobText)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error finding job description:', error);
+      return null;
+    }
+    
+    return data;
+  }
+
+  // Get resume by ID
+  async getResumeById(id: string): Promise<ResumeData | null> {
+    const { data, error } = await this.supabase
+      .from('resumes')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error || !data) {
+      console.error('Error getting resume by ID:', error);
+      return null;
+    }
+    
+    return data;
+  }
+
+  // Get job description by ID
+  async getJobById(id: string): Promise<JobData | null> {
+    const { data, error } = await this.supabase
+      .from('job_descriptions')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error || !data) {
+      console.error('Error getting job description by ID:', error);
+      return null;
+    }
+    
+    return data;
+  }
+
   // Store resume in database
   async storeResume(resumeText: string, filePath: string | null): Promise<ResumeData> {
     // We need to cast the result to handle the type mismatch between runtime and TypeScript types
