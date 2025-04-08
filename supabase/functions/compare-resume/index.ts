@@ -83,8 +83,8 @@ serve(async (req) => {
       console.log("Created new job description with ID:", jobData.id);
     }
     
-    // Perform the comparison
-    const comparisonResult = compareResumeToJob(resume_text, job_description_text);
+    // Perform the comparison - now asynchronously
+    const comparisonResult = await compareResumeToJob(resume_text, job_description_text);
     
     // Store the comparison result
     const comparisonData = await dbHandler.storeComparison(

@@ -16,6 +16,24 @@ export interface AdvancedMatchCriteria {
   description: string;
 }
 
+export interface ImprovementPotential {
+  keyword_optimization: {
+    level: string;
+    details: {
+      missing_technical: string[];
+      missing_soft: string[];
+    };
+  };
+  structure_optimization: {
+    level: string;
+    issues: string[];
+  };
+  achievement_emphasis: {
+    level: string;
+    issues: string[];
+  };
+}
+
 export interface ReportData {
   keywords: {
     hard_skills: Skill[];
@@ -37,23 +55,7 @@ export interface ReportData {
     skills: string;
     projects: string;
   };
-  improvement_potential?: {
-    keyword_optimization: {
-      level: string;
-      details: {
-        missing_technical: string[];
-        missing_soft: string[];
-      };
-    };
-    structure_optimization: {
-      level: string;
-      issues: string[];
-    };
-    achievement_emphasis: {
-      level: string;
-      issues: string[];
-    };
-  };
+  improvement_potential?: ImprovementPotential;
 }
 
 export interface ReportViewProps {

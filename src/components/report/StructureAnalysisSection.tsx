@@ -1,9 +1,7 @@
 
-import { useState } from 'react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Button } from '@/components/ui/button';
-import { Book, ChevronUp, ChevronDown } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { ImprovementPotential } from './types';
 
 interface StructureAnalysisSectionProps {
   sectionAnalysis: {
@@ -12,143 +10,115 @@ interface StructureAnalysisSectionProps {
     skills: string;
     projects: string;
   };
-  improvementPotential?: {
-    keyword_optimization: string;
-    structure_optimization: string;
-    achievement_emphasis: string;
-  };
+  improvementPotential?: ImprovementPotential;
 }
 
 export const StructureAnalysisSection = ({ 
   sectionAnalysis, 
   improvementPotential 
 }: StructureAnalysisSectionProps) => {
-  const [isStructureOpen, setIsStructureOpen] = useState(false);
-
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'present':
-        return <Badge className="bg-green-500">Present</Badge>;
-      case 'missing':
-        return <Badge variant="outline" className="border-red-300 text-red-500">Missing</Badge>;
-      case 'needs_improvement':
-        return <Badge className="bg-yellow-500">Needs Improvement</Badge>;
-      case 'optional':
-        return <Badge variant="outline" className="border-blue-300 text-blue-500">Optional</Badge>;
-      default:
-        return null;
-    }
-  };
-  
-  const getImprovementBadge = (level: string) => {
-    switch(level) {
-      case 'high':
-        return <Badge className="bg-red-500">High Priority</Badge>;
-      case 'medium':
-        return <Badge className="bg-yellow-500">Medium Priority</Badge>;
-      case 'low':
-        return <Badge className="bg-green-500">Low Priority</Badge>;
-      default:
-        return null;
-    }
-  };
-
   return (
-    <Collapsible open={isStructureOpen} onOpenChange={setIsStructureOpen}>
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium flex items-center gap-2">
-          <Book className="h-5 w-5" />
-          Resume Structure Analysis
-        </h3>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm">
-            {isStructureOpen ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
-        </CollapsibleTrigger>
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">Document Structure Analysis</h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Alert>
+          <AlertTitle>Education</AlertTitle>
+          <AlertDescription>{sectionAnalysis.education}</AlertDescription>
+        </Alert>
+        
+        <Alert>
+          <AlertTitle>Experience</AlertTitle>
+          <AlertDescription>{sectionAnalysis.experience}</AlertDescription>
+        </Alert>
+        
+        <Alert>
+          <AlertTitle>Skills</AlertTitle>
+          <AlertDescription>{sectionAnalysis.skills}</AlertDescription>
+        </Alert>
+        
+        <Alert>
+          <AlertTitle>Projects</AlertTitle>
+          <AlertDescription>{sectionAnalysis.projects}</AlertDescription>
+        </Alert>
       </div>
-      <CollapsibleContent className="mt-2">
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="font-medium">Education Section</h4>
-                {getStatusBadge(sectionAnalysis.education)}
+
+      {improvementPotential && (
+        <div className="mt-6 space-y-4">
+          <h4 className="font-medium">Areas for Improvement</h4>
+          
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center mb-1">
+                <span className="font-medium mr-2">Keyword Optimization:</span>
+                <Badge 
+                  className={`${
+                    improvementPotential.keyword_optimization.level === 'high' 
+                      ? 'bg-red-500 hover:bg-red-600' 
+                      : improvementPotential.keyword_optimization.level === 'medium'
+                        ? 'bg-yellow-500 hover:bg-yellow-600'
+                        : 'bg-green-500 hover:bg-green-600'
+                  }`}
+                >
+                  {improvementPotential.keyword_optimization.level}
+                </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {sectionAnalysis.education === 'present' 
-                  ? 'Education section properly included' 
-                  : 'Add an education section with your qualifications'}
-              </p>
+              {improvementPotential.keyword_optimization.details.missing_technical.length > 0 && (
+                <div className="text-sm text-muted-foreground ml-4">
+                  <div>Missing technical skills: {improvementPotential.keyword_optimization.details.missing_technical.join(', ')}</div>
+                </div>
+              )}
+              {improvementPotential.keyword_optimization.details.missing_soft.length > 0 && (
+                <div className="text-sm text-muted-foreground ml-4">
+                  <div>Missing soft skills: {improvementPotential.keyword_optimization.details.missing_soft.join(', ')}</div>
+                </div>
+              )}
             </div>
             
-            <div className="p-4 border rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="font-medium">Experience Section</h4>
-                {getStatusBadge(sectionAnalysis.experience)}
+            <div>
+              <div className="flex items-center mb-1">
+                <span className="font-medium mr-2">Structure Optimization:</span>
+                <Badge 
+                  className={`${
+                    improvementPotential.structure_optimization.level === 'high' 
+                      ? 'bg-red-500 hover:bg-red-600' 
+                      : improvementPotential.structure_optimization.level === 'medium'
+                        ? 'bg-yellow-500 hover:bg-yellow-600'
+                        : 'bg-green-500 hover:bg-green-600'
+                  }`}
+                >
+                  {improvementPotential.structure_optimization.level}
+                </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {sectionAnalysis.experience === 'present' 
-                  ? 'Experience section well structured' 
-                  : 'Improve your experience section with clear dates and achievements'}
-              </p>
+              {improvementPotential.structure_optimization.issues.length > 0 && (
+                <div className="text-sm text-muted-foreground ml-4">
+                  Missing: {improvementPotential.structure_optimization.issues.join(', ')}
+                </div>
+              )}
             </div>
             
-            <div className="p-4 border rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="font-medium">Skills Section</h4>
-                {getStatusBadge(sectionAnalysis.skills)}
+            <div>
+              <div className="flex items-center mb-1">
+                <span className="font-medium mr-2">Achievement Emphasis:</span>
+                <Badge 
+                  className={`${
+                    improvementPotential.achievement_emphasis.level === 'high' 
+                      ? 'bg-red-500 hover:bg-red-600' 
+                      : 'bg-green-500 hover:bg-green-600'
+                  }`}
+                >
+                  {improvementPotential.achievement_emphasis.level}
+                </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {sectionAnalysis.skills === 'present' 
-                  ? 'Skills section included with relevant technologies' 
-                  : 'Add a dedicated skills section to highlight your capabilities'}
-              </p>
-            </div>
-            
-            <div className="p-4 border rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="font-medium">Projects Section</h4>
-                {getStatusBadge(sectionAnalysis.projects)}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {sectionAnalysis.projects === 'present' 
-                  ? 'Projects section demonstrates practical experience' 
-                  : 'Consider adding a projects section to showcase your work'}
-              </p>
+              {improvementPotential.achievement_emphasis.issues.length > 0 && (
+                <div className="text-sm text-muted-foreground ml-4">
+                  Missing: {improvementPotential.achievement_emphasis.issues.join(', ')}
+                </div>
+              )}
             </div>
           </div>
-          
-          {improvementPotential && (
-            <div className="mt-4">
-              <h4 className="font-medium mb-2">Improvement Priorities</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-3 border rounded-lg">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm">Keyword Optimization</span>
-                    {getImprovementBadge(improvementPotential.keyword_optimization)}
-                  </div>
-                </div>
-                <div className="p-3 border rounded-lg">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm">Structure Optimization</span>
-                    {getImprovementBadge(improvementPotential.structure_optimization)}
-                  </div>
-                </div>
-                <div className="p-3 border rounded-lg">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm">Achievement Emphasis</span>
-                    {getImprovementBadge(improvementPotential.achievement_emphasis)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+      )}
+    </div>
   );
 };
