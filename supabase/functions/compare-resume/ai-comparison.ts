@@ -72,63 +72,182 @@ const callGenerativeAI = async (resumeText: string, jobText: string) => {
   }
 };
 
-// Extract skill keywords from job description
+// Extract skill keywords from job description - now with dynamic skill detection
 const extractSkillKeywords = (jobText: string) => {
-  // Define categories of skills to look for
-  const skillPatterns = {
-    technical: [
-      /\b(javascript|typescript|python|java|nodejs|react|angular|vue|php|ruby|go|kotlin|swift)\b/gi,
-      /\b(html|css|sass|less|bootstrap|tailwind|material-ui|styled-components)\b/gi,
-      /\b(sql|nosql|mysql|postgresql|mongodb|firebase|dynamodb|redis|elasticsearch)\b/gi,
-      /\b(aws|azure|gcp|cloud|docker|kubernetes|devops|ci\/cd|jenkins|github actions)\b/gi,
-      /\b(rest|graphql|api|http|websocket|grpc|microservices|serverless|lambda)\b/gi,
-      /\b(git|github|gitlab|jira|agile|scrum|kanban|tdd|bdd)\b/gi,
-      /\b(machine learning|ai|deep learning|nlp|computer vision|data science|analytics)\b/gi,
-      /\b(mobile|ios|android|react native|flutter|ionic|xamarin)\b/gi
-    ],
-    soft: [
-      /\b(communication|teamwork|collaboration|leadership|management)\b/gi,
-      /\b(problem[\s-]?solving|analytical|critical[\s-]?thinking|decision[\s-]?making)\b/gi,
-      /\b(creativity|innovation|adaptability|flexibility|resilience)\b/gi,
-      /\b(time[\s-]?management|organization|planning|prioritization|detail[\s-]?oriented)\b/gi,
-      /\b(customer[\s-]?service|client[\s-]?facing|presentation|negotiation|conflict[\s-]?resolution)\b/gi
-    ],
-    roles: [
-      /\b(software engineer|developer|architect|manager|lead|senior|junior|intern)\b/gi,
-      /\b(full[\s-]?stack|front[\s-]?end|back[\s-]?end|ui|ux|devops|sre|data|product)\b/gi,
-      /\b(analyst|scientist|specialist|consultant|administrator)\b/gi
-    ],
-    qualifications: [
-      /\b(degree|bachelor|master|phd|certification|license|certificate)\b/gi,
-      /\b(years of experience|proven track record|background in|proficiency in|expertise in)\b/gi
-    ]
-  };
+  // Create a dynamic approach that doesn't rely on predefined tech skills
   
-  // Find all matches for each pattern
-  const extractedSkills: Record<string, string[]> = {
-    technical: [],
-    soft: [],
-    roles: [],
-    qualifications: []
-  };
+  // 1. Use NLP to extract important noun phrases and verb phrases
+  const cleanedText = jobText.toLowerCase();
+  const sentences = cleanedText.split(/[.!?]+/).filter(s => s.trim().length > 0);
   
-  // For each category, extract matching skills
-  for (const [category, patterns] of Object.entries(skillPatterns)) {
-    const categorySkills = new Set<string>();
+  // 2. Extract potential skills based on common patterns and context
+  const skillWords = new Set([
+    // General skills across all industries
+    'ability', 'skill', 'experience', 'knowledge', 'proficient', 'familiar', 'expert', 'competent',
+    'qualification', 'certified', 'trained', 'background', 'capability'
+  ]);
+  
+  // Extract technical skills (domain-specific knowledge)
+  const technicalSkills = new Set<string>();
+  const softSkills = new Set<string>();
+  const roles = new Set<string>();
+  const qualifications = new Set<string>();
+  
+  // Process industry-specific terms by analyzing context
+  sentences.forEach(sentence => {
+    // Look for skill indicators
+    const words = sentence.split(/\s+/);
     
-    patterns.forEach(pattern => {
-      const matches = jobText.match(pattern);
-      if (matches) {
-        matches.forEach(match => {
-          categorySkills.add(match.toLowerCase());
-        });
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i].replace(/[^\w]/g, '');
+      
+      // Skip short words and common words
+      if (word.length < 3) continue;
+      
+      // Extract skills based on context
+      if (skillWords.has(word) || 
+          sentence.includes('experience with') || 
+          sentence.includes('knowledge of') ||
+          sentence.includes('ability to') ||
+          sentence.includes('proficient in') ||
+          sentence.includes('familiar with') ||
+          sentence.includes('understanding of')) {
+        
+        // Get the surrounding words which likely contain the actual skill
+        const phraseStart = Math.max(0, i - 3);
+        const phraseEnd = Math.min(words.length, i + 5);
+        const phrase = words.slice(phraseStart, phraseEnd).join(' ');
+        
+        // Determine skill type based on context
+        if (sentence.includes('certification') || 
+            sentence.includes('degree') || 
+            sentence.includes('license') ||
+            sentence.includes('qualification')) {
+          
+          // Identify qualification phrases
+          const qualificationPattern = /\b(degree|certification|certificate|diploma|license|qualified|graduate|educated|bachelor|master|phd|doctorate)\b.*?(\bin\s+|with\s+|)([a-zA-Z\s]+)/i;
+          const match = sentence.match(qualificationPattern);
+          if (match && match[3]) {
+            qualifications.add(match[3].trim().toLowerCase());
+          } else {
+            // Extract other qualification-related terms
+            extractTerms(sentence, qualifications);
+          }
+        } 
+        else if (sentence.includes('communicate') || 
+                sentence.includes('team') || 
+                sentence.includes('collaborate') ||
+                sentence.includes('lead') ||
+                sentence.includes('manage') ||
+                sentence.includes('interpersonal') ||
+                sentence.includes('attitude') ||
+                sentence.includes('solve') ||
+                sentence.includes('flexible')) {
+          // Extract soft skill phrases
+          const softSkillPattern = /\b(communicat|collaborat|coordinat|lead|manag|prioritiz|solv|organiz|teamwork|team player|detail-oriented|self-motivated|customer service|interpersonal|problem[\s-]?solv|analytical|critical[\s-]?think|time[\s-]?manag|decision[\s-]?mak|flex|adapt|creat|innovat|resilien|conflict[\s-]?resolut|listen)[a-z]*(ing|ion|ity|ive)?\b/i;
+          const matches = sentence.match(new RegExp(softSkillPattern, 'gi'));
+          if (matches) {
+            matches.forEach(match => {
+              softSkills.add(match.toLowerCase());
+            });
+          }
+        }
+        else if (sentence.includes('role') || 
+                sentence.includes('position') || 
+                sentence.includes('job title') ||
+                sentence.includes('level')) {
+          // Extract role-related terms
+          const rolePattern = /\b(senior|junior|lead|manager|supervisor|director|chief|head|specialist|assistant|associate|entry[\s-]?level|mid[\s-]?level)\b/i;
+          const matches = sentence.match(new RegExp(rolePattern, 'gi'));
+          if (matches) {
+            matches.forEach(match => {
+              roles.add(match.toLowerCase());
+            });
+          }
+        }
+        else {
+          // Remaining phrases are likely technical skills
+          // Extract noun phrases as potential technical skills
+          const technicalPattern = /\b([a-zA-Z]+(?:[\s-][a-zA-Z]+)*)\b/g;
+          const potentialSkills = sentence.match(technicalPattern);
+          if (potentialSkills) {
+            potentialSkills.forEach(skill => {
+              if (skill.length > 3 && !skillWords.has(skill)) {
+                technicalSkills.add(skill.toLowerCase());
+              }
+            });
+          }
+        }
       }
-    });
-    
-    extractedSkills[category] = Array.from(categorySkills);
+    }
+  });
+  
+  // Helper function to extract terms from a sentence
+  function extractTerms(sentence: string, skillSet: Set<string>) {
+    // Simple noun phrase extraction
+    const nounPhrasePattern = /\b([a-zA-Z]+(?:[\s-][a-zA-Z]+){0,3})\b/g;
+    const matches = sentence.match(nounPhrasePattern);
+    if (matches) {
+      matches.forEach(match => {
+        if (match.length > 3) {
+          skillSet.add(match.toLowerCase());
+        }
+      });
+    }
   }
   
-  return extractedSkills;
+  // 3. Extract industry-specific patterns based on content
+  const industryDetection = {
+    transport: /\b(driving|driver|vehicle|transport|delivery|logistics|truck|lorry|fleet|route|safety|haul)\b/i,
+    culinary: /\b(cook|chef|kitchen|food|culinary|cuisine|restaurant|catering|menu|recipe|baking|ingredient)\b/i,
+    healthcare: /\b(patient|medical|clinical|health|care|treatment|hospital|doctor|nurse|therapy|diagnostic)\b/i,
+    construction: /\b(build|construction|contractor|site|safety|project|architect|engineering|concrete|electrical|plumbing)\b/i,
+    retail: /\b(sales|customer|retail|store|inventory|merchandise|cashier|stock|display|service)\b/i,
+    finance: /\b(finance|accounting|budget|financial|investment|banking|audit|tax|report|analysis|forecast)\b/i,
+    education: /\b(teach|education|student|classroom|curriculum|instruction|school|learning|academic|assessment)\b/i,
+    tech: /\b(software|developer|program|code|web|app|system|data|network|cloud|security|it|computer)\b/i
+  };
+  
+  // Detect industry and add relevant terms
+  let detectedIndustry = '';
+  let highestMatchCount = 0;
+  
+  for (const [industry, pattern] of Object.entries(industryDetection)) {
+    const matches = jobText.match(pattern);
+    const matchCount = matches ? matches.length : 0;
+    
+    if (matchCount > highestMatchCount) {
+      highestMatchCount = matchCount;
+      detectedIndustry = industry;
+    }
+  }
+  
+  // Add industry-specific skills if detected
+  if (detectedIndustry === 'transport') {
+    // Transport industry skills
+    ['driving license', 'route planning', 'vehicle maintenance', 'loading', 'unloading', 'safety regulations', 
+     'logistics', 'punctuality', 'time management', 'gps navigation', 'customer service'].forEach(skill => {
+      if (jobText.toLowerCase().includes(skill.toLowerCase())) {
+        technicalSkills.add(skill.toLowerCase());
+      }
+    });
+  } else if (detectedIndustry === 'culinary') {
+    // Culinary industry skills
+    ['food preparation', 'cooking techniques', 'menu planning', 'kitchen management', 'food safety',
+     'knife skills', 'recipe development', 'plating', 'portion control', 'inventory management'].forEach(skill => {
+      if (jobText.toLowerCase().includes(skill.toLowerCase())) {
+        technicalSkills.add(skill.toLowerCase());
+      }
+    });
+  }
+  
+  // Convert sets to arrays
+  return {
+    technical: Array.from(technicalSkills).filter(skill => !softSkills.has(skill)).slice(0, 15),
+    soft: Array.from(softSkills).slice(0, 10),
+    roles: Array.from(roles).slice(0, 5),
+    qualifications: Array.from(qualifications).slice(0, 5)
+  };
 };
 
 // Calculate basic match score based on extracted keywords
