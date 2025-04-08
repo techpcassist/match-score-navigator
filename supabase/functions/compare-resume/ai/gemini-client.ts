@@ -1,5 +1,6 @@
 
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+// Import using Deno-compatible syntax for npm packages
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "npm:@google/generative-ai";
 
 /**
  * Generic interface for AI analysis response
