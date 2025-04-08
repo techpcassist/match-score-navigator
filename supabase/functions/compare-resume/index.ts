@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { compareResumeToJob } from "./comparison.ts";
+import { compareResumeToJob } from "./analysis/ai-comparison.ts";
 import { DatabaseHandler } from "./database.ts";
 
 // CORS headers for browser access
