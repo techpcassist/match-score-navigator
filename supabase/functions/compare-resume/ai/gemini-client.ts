@@ -53,10 +53,15 @@ export const callGenerativeAI = async (
     const response = await result.response;
     const text = response.text();
     
-    // Parse the JSON response
+    // Parse the JSON response - now with support for markdown-formatted JSON
     try {
-      // The response should be a valid JSON string
-      const parsedData = JSON.parse(text);
+      console.log("Raw response from Google Generative AI:", text);
+      
+      // Remove markdown code block formatting if present
+      const jsonContent = text.replace(/```(json)?\n/g, '').replace(/\n```$/g, '');
+      
+      // The response should now be a valid JSON string
+      const parsedData = JSON.parse(jsonContent);
       console.log("Successfully received and parsed response from Google Generative AI");
       
       return {
@@ -133,5 +138,5 @@ function createAnalysisPrompt(resumeText: string, jobText: string): string {
     }
   }
   
-  The analysis should be specific to the job type mentioned in the job description, identifying appropriate skills and requirements for that particular industry.`;
+  Return ONLY valid JSON without any markdown formatting or explanations. The analysis should be specific to the job type mentioned in the job description, identifying appropriate skills and requirements for that particular industry.`;
 }
