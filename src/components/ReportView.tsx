@@ -19,6 +19,12 @@ interface ATSCheck {
   message: string;
 }
 
+interface AdvancedMatchCriteria {
+  name: string;
+  status: 'matched' | 'partial' | 'missing';
+  description: string;
+}
+
 interface ReportViewProps {
   matchScore: number;
   report: {
@@ -28,11 +34,13 @@ interface ReportViewProps {
     };
     ats_checks: ATSCheck[];
     suggestions: string[];
+    advanced_criteria?: AdvancedMatchCriteria[];
   };
 }
 
 const ReportView = ({ matchScore, report }: ReportViewProps) => {
   const [isOpen, setIsOpen] = useState(true);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   
   const scoreColor = matchScore >= 80 
     ? 'bg-green-500' 
@@ -120,6 +128,48 @@ const ReportView = ({ matchScore, report }: ReportViewProps) => {
           </div>
 
           <Separator />
+
+          {/* Advanced Matching Criteria */}
+          {report.advanced_criteria && report.advanced_criteria.length > 0 && (
+            <>
+              <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">Advanced Matching Criteria</h3>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      {isAdvancedOpen ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
+                <CollapsibleContent className="mt-2">
+                  <div className="space-y-3">
+                    {report.advanced_criteria.map((criteria, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
+                        {criteria.status === 'matched' && (
+                          <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        )}
+                        {criteria.status === 'partial' && (
+                          <AlertTriangle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                        )}
+                        {criteria.status === 'missing' && (
+                          <XCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                        )}
+                        <div>
+                          <p className="font-medium">{criteria.name}</p>
+                          <p className="text-sm text-muted-foreground">{criteria.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+              <Separator />
+            </>
+          )}
 
           {/* ATS Checks */}
           <div className="space-y-4">

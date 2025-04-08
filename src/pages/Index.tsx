@@ -45,6 +45,58 @@ const Index = () => {
               { term: "Leadership", matched: false },
             ]
           },
+          advanced_criteria: [
+            { 
+              name: "Skill Proficiency Level", 
+              status: "partial", 
+              description: "The resume indicates intermediate proficiency in React, but the job requires advanced expertise."
+            },
+            { 
+              name: "Quantified Impact Alignment", 
+              status: "matched", 
+              description: "Your quantified achievements (15% performance improvement) align well with the KPIs mentioned in the job description."
+            },
+            { 
+              name: "Project Complexity & Scope", 
+              status: "matched", 
+              description: "The scale and complexity of projects in your resume match the expectations outlined in the job description."
+            },
+            { 
+              name: "Semantic Role Similarity", 
+              status: "partial", 
+              description: "Some core responsibilities in your previous roles align with the job requirements, but there are gaps in certain areas."
+            },
+            { 
+              name: "Career Trajectory & Velocity", 
+              status: "matched", 
+              description: "Your career progression matches the seniority level required for this position."
+            },
+            { 
+              name: "Contextual Skill Application", 
+              status: "missing", 
+              description: "Some key skills are mentioned but not demonstrated in a relevant context to this specific role."
+            },
+            { 
+              name: "Recency of Critical Skill Usage", 
+              status: "matched", 
+              description: "Your most recent experience includes the critical skills required for this position."
+            },
+            { 
+              name: "Transferable Skills", 
+              status: "matched", 
+              description: "Several transferable skills identified that are relevant to the requirements."
+            },
+            { 
+              name: "Problem-Solving Approach", 
+              status: "partial", 
+              description: "Your analytical approach is evident but could better highlight creative problem-solving as mentioned in the job."
+            },
+            { 
+              name: "Tool Ecosystem Familiarity", 
+              status: "partial", 
+              description: "Experience with related tools suggests familiarity with the required ecosystem, but specific tools are missing."
+            }
+          ],
           ats_checks: [
             { check_name: "Contact Information", status: "pass", message: "Contact information found" },
             { check_name: "Education Section", status: "pass", message: "Education section present" },
@@ -54,7 +106,11 @@ const Index = () => {
           suggestions: [
             "Add more quantifiable achievements in your experience section",
             "Include Python skills mentioned in the job description",
-            "Consider adding a specific section for technical skills"
+            "Consider adding a specific section for technical skills",
+            "Demonstrate leadership experience with concrete examples",
+            "Highlight experience with SQL or database management",
+            "Use more action verbs that demonstrate advanced proficiency",
+            "Include specific tools from the job's required ecosystem"
           ]
         },
         processing_metadata: {
