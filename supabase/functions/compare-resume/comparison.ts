@@ -1,6 +1,6 @@
 
-// Comparison algorithm utility functions
-import { compareResumeToJob } from "./ai-comparison.ts";
+// Import the compareResumeToJob function from its new location
+import { compareResumeToJob } from "./analysis/ai-comparison.ts";
 
 // Export the primary comparison function
 export { compareResumeToJob };
