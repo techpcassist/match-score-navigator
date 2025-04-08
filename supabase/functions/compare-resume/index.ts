@@ -130,7 +130,7 @@ serve(async (req) => {
   }
   
   try {
-    const { resume_text, job_description_text } = await req.json();
+    const { resume_text, job_description_text, resume_file_path } = await req.json();
     
     // Validate inputs
     if (!resume_text || !job_description_text) {
@@ -153,7 +153,10 @@ serve(async (req) => {
     // Store the resume
     const { data: resumeData, error: resumeError } = await supabase
       .from('resumes')
-      .insert([{ resume_text }])
+      .insert([{ 
+        resume_text,
+        file_path: resume_file_path || null 
+      }])
       .select()
       .single();
       
@@ -192,7 +195,8 @@ serve(async (req) => {
         job_description_id: jobData.id,
         comparison_id: comparisonData.id,
         match_score: comparisonResult.match_score,
-        report: comparisonResult.analysis
+        report: comparisonResult.analysis,
+        resume_file_path
       }),
       { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },
