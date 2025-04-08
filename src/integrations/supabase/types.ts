@@ -9,7 +9,84 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      comparisons: {
+        Row: {
+          analysis_report: Json
+          created_at: string
+          id: string
+          job_description_id: string
+          match_score: number
+          resume_id: string
+        }
+        Insert: {
+          analysis_report: Json
+          created_at?: string
+          id?: string
+          job_description_id: string
+          match_score: number
+          resume_id: string
+        }
+        Update: {
+          analysis_report?: Json
+          created_at?: string
+          id?: string
+          job_description_id?: string
+          match_score?: number
+          resume_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comparisons_job_description_id_fkey"
+            columns: ["job_description_id"]
+            isOneToOne: false
+            referencedRelation: "job_descriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comparisons_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "resumes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_descriptions: {
+        Row: {
+          created_at: string
+          description_text: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          description_text: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          description_text?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      resumes: {
+        Row: {
+          created_at: string
+          id: string
+          resume_text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          resume_text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          resume_text?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

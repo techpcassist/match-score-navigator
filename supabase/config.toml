@@ -1,1 +1,5 @@
+
 project_id = "kfdsojlqnezrimzvucwt"
+
+[functions.compare-resume]
+verify_jwt = false
