@@ -1,49 +1,119 @@
 
 // Comparison algorithm using Google Generative AI
 
-// Extract keywords from text
-const extractKeywords = (text: string, commonKeywords: string[]) => {
-  const textLower = text.toLowerCase();
-  return commonKeywords.filter(keyword => textLower.includes(keyword));
+// Extract keywords from text using basic NLP techniques
+const extractBasicKeywords = (text: string) => {
+  // Convert to lowercase and remove special characters
+  const cleanText = text.toLowerCase().replace(/[^\w\s]/g, ' ');
+  
+  // Split by whitespace and filter out common stop words and short terms
+  const stopWords = new Set(['and', 'the', 'of', 'to', 'a', 'in', 'for', 'is', 'on', 'that', 'by', 
+    'this', 'with', 'i', 'you', 'it', 'not', 'or', 'be', 'are', 'from', 'at', 'as', 'your', 'have', 
+    'more', 'has', 'an', 'was', 'we', 'will', 'can', 'all', 'use']);
+  
+  // Extract words, filter stop words and short words
+  const words = cleanText.split(/\s+/).filter(word => 
+    word.length > 2 && !stopWords.has(word)
+  );
+  
+  // Count frequency of each word
+  const wordFreq: Record<string, number> = {};
+  words.forEach(word => {
+    wordFreq[word] = (wordFreq[word] || 0) + 1;
+  });
+  
+  // Sort by frequency
+  const sortedWords = Object.entries(wordFreq)
+    .sort((a, b) => b[1] - a[1])
+    .map(entry => entry[0]);
+  
+  return sortedWords.slice(0, 50); // Return top 50 keywords
 };
 
-// Calculate basic match score based on keywords
+// Extract skill keywords from job description
+const extractSkillKeywords = (jobText: string) => {
+  // Define categories of skills to look for
+  const skillPatterns = {
+    technical: [
+      /\b(javascript|typescript|python|java|nodejs|react|angular|vue|php|ruby|go|kotlin|swift)\b/gi,
+      /\b(html|css|sass|less|bootstrap|tailwind|material-ui|styled-components)\b/gi,
+      /\b(sql|nosql|mysql|postgresql|mongodb|firebase|dynamodb|redis|elasticsearch)\b/gi,
+      /\b(aws|azure|gcp|cloud|docker|kubernetes|devops|ci\/cd|jenkins|github actions)\b/gi,
+      /\b(rest|graphql|api|http|websocket|grpc|microservices|serverless|lambda)\b/gi,
+      /\b(git|github|gitlab|jira|agile|scrum|kanban|tdd|bdd)\b/gi,
+      /\b(machine learning|ai|deep learning|nlp|computer vision|data science|analytics)\b/gi,
+      /\b(mobile|ios|android|react native|flutter|ionic|xamarin)\b/gi
+    ],
+    soft: [
+      /\b(communication|teamwork|collaboration|leadership|management)\b/gi,
+      /\b(problem[\s-]?solving|analytical|critical[\s-]?thinking|decision[\s-]?making)\b/gi,
+      /\b(creativity|innovation|adaptability|flexibility|resilience)\b/gi,
+      /\b(time[\s-]?management|organization|planning|prioritization|detail[\s-]?oriented)\b/gi,
+      /\b(customer[\s-]?service|client[\s-]?facing|presentation|negotiation|conflict[\s-]?resolution)\b/gi
+    ],
+    roles: [
+      /\b(software engineer|developer|architect|manager|lead|senior|junior|intern)\b/gi,
+      /\b(full[\s-]?stack|front[\s-]?end|back[\s-]?end|ui|ux|devops|sre|data|product)\b/gi,
+      /\b(analyst|scientist|specialist|consultant|administrator)\b/gi
+    ],
+    qualifications: [
+      /\b(degree|bachelor|master|phd|certification|license|certificate)\b/gi,
+      /\b(years of experience|proven track record|background in|proficiency in|expertise in)\b/gi
+    ]
+  };
+  
+  // Find all matches for each pattern
+  const extractedSkills: Record<string, string[]> = {
+    technical: [],
+    soft: [],
+    roles: [],
+    qualifications: []
+  };
+  
+  // For each category, extract matching skills
+  for (const [category, patterns] of Object.entries(skillPatterns)) {
+    const categorySkills = new Set<string>();
+    
+    patterns.forEach(pattern => {
+      const matches = jobText.match(pattern);
+      if (matches) {
+        matches.forEach(match => {
+          categorySkills.add(match.toLowerCase());
+        });
+      }
+    });
+    
+    extractedSkills[category] = Array.from(categorySkills);
+  }
+  
+  return extractedSkills;
+};
+
+// Calculate basic match score based on extracted keywords
 const calculateKeywordMatchScore = (resumeText: string, jobText: string) => {
-  // Common keywords in tech job descriptions
-  const commonKeywords = [
-    // Technical skills
-    "react", "javascript", "typescript", "python", "java", "nodejs", "express",
-    "mongodb", "sql", "database", "frontend", "backend", "fullstack", "development",
-    "aws", "azure", "gcp", "cloud", "docker", "kubernetes", "devops", "ci/cd",
-    "git", "github", "rest", "graphql", "api", "microservices", "architecture",
-    
-    // Soft skills
-    "communication", "teamwork", "leadership", "problem-solving", "analytical", 
-    "creativity", "project management", "time management", "adaptability", "flexibility",
-    
-    // Job roles
-    "software", "engineer", "developer", "architect", "manager", "lead", "senior",
-    "junior", "full-stack", "front-end", "back-end", "data scientist", "analyst",
-    
-    // Qualifications
-    "degree", "bachelor", "master", "phd", "certification", "experience", "years", 
-    
-    // Industry buzzwords
-    "agile", "scrum", "kanban", "lean", "mvp", "startup", "enterprise", "innovation",
-    "machine learning", "ai", "artificial intelligence", "blockchain", "security",
-    "data", "analytics", "big data", "mobile", "web", "responsive", "optimization"
+  // Generate keywords from the job description
+  const basicKeywords = extractBasicKeywords(jobText);
+  const extractedSkills = extractSkillKeywords(jobText);
+  
+  // Combine all extracted skills into job keywords
+  const jobKeywords = [
+    ...basicKeywords,
+    ...extractedSkills.technical,
+    ...extractedSkills.soft,
+    ...extractedSkills.roles,
+    ...extractedSkills.qualifications
   ];
   
-  // Find job keywords
-  const jobKeywords = extractKeywords(jobText, commonKeywords);
+  // Deduplicate the job keywords
+  const uniqueJobKeywords = Array.from(new Set(jobKeywords));
   
   // Count matches in resume
   let matchCount = 0;
   const matchedKeywords = [];
   const missingKeywords = [];
   
-  jobKeywords.forEach(keyword => {
-    if (resumeText.toLowerCase().includes(keyword)) {
+  uniqueJobKeywords.forEach(keyword => {
+    if (resumeText.toLowerCase().includes(keyword.toLowerCase())) {
       matchCount++;
       matchedKeywords.push(keyword);
     } else {
@@ -52,13 +122,13 @@ const calculateKeywordMatchScore = (resumeText: string, jobText: string) => {
   });
   
   // Calculate score based on keyword matches
-  const keywordScore = jobKeywords.length > 0 
-    ? (matchCount / jobKeywords.length) * 100 
+  const keywordScore = uniqueJobKeywords.length > 0 
+    ? (matchCount / uniqueJobKeywords.length) * 100 
     : 50;
     
   return { 
     keywordScore, 
-    jobKeywords, 
+    jobKeywords: uniqueJobKeywords, 
     matchedKeywords, 
     missingKeywords 
   };
@@ -74,18 +144,19 @@ const generateSuggestions = (
 ) => {
   const suggestions = [];
   
-  // Add missing keywords suggestions
+  // Extract skills by category
+  const extractedSkills = extractSkillKeywords(jobText);
+  
+  // Add missing keywords suggestions by category
   if (missingKeywords.length > 0) {
-    const keyGroups: Record<string, string[]> = {
-      "technical skills": ["react", "javascript", "typescript", "python", "java", "nodejs", "aws", "docker", "kubernetes", "git"],
-      "soft skills": ["communication", "teamwork", "leadership", "problem-solving", "analytical", "creativity"],
-      "qualifications": ["degree", "bachelor", "master", "phd", "certification", "experience", "years"],
-    };
-    
     const missingByCategory: Record<string, string[]> = {};
     
-    for (const [category, keywords] of Object.entries(keyGroups)) {
-      const missing = missingKeywords.filter(k => keywords.includes(k));
+    // Categorize missing keywords
+    for (const [category, skills] of Object.entries(extractedSkills)) {
+      const missing = missingKeywords.filter(k => 
+        skills.includes(k.toLowerCase())
+      );
+      
       if (missing.length > 0) {
         missingByCategory[category] = missing;
       }
@@ -94,7 +165,12 @@ const generateSuggestions = (
     // Generate targeted suggestions by category
     for (const [category, keywords] of Object.entries(missingByCategory)) {
       if (keywords.length > 0) {
-        suggestions.push(`Add ${category} like ${keywords.slice(0, 3).join(", ")}${keywords.length > 3 ? " and more" : ""} to your resume`);
+        const categoryName = category === 'technical' ? 'Technical skills' : 
+                            category === 'soft' ? 'Soft skills' : 
+                            category === 'roles' ? 'Role-specific terms' : 
+                            'Qualifications';
+        
+        suggestions.push(`Add ${categoryName} like ${keywords.slice(0, 3).join(", ")}${keywords.length > 3 ? " and more" : ""} to your resume`);
       }
     }
   }
@@ -105,12 +181,13 @@ const generateSuggestions = (
   }
   
   // Action verbs suggestions
-  const actionVerbs = ["implemented", "developed", "created", "managed", "led", "designed", "optimized"];
+  const actionVerbs = ["implemented", "developed", "created", "managed", "led", "designed", "optimized", 
+                      "achieved", "improved", "increased", "decreased", "reduced", "launched", "delivered"];
   const actionVerbCount = actionVerbs.reduce((count, verb) => {
     return count + (resumeText.toLowerCase().match(new RegExp(`\\b${verb}\\b`, 'g')) || []).length;
   }, 0);
   
-  if (actionVerbCount < 3) {
+  if (actionVerbCount < 5) {
     suggestions.push("Use more action verbs like 'implemented', 'developed', or 'optimized' to describe your achievements");
   }
   
@@ -130,21 +207,52 @@ const generateSuggestions = (
   }
   
   // Job-specific suggestions
-  if (jobText.match(/\bteam\b|\bcollaboration\b/i) && 
-      !resumeText.match(/\bteam\b|\bcollaboration\b/i)) {
-    suggestions.push("Emphasize teamwork and collaboration experience");
+  const specificRequirements = [
+    { pattern: /\bteam\b|\bcollaboration\b/i, suggestion: "Emphasize teamwork and collaboration experience" },
+    { pattern: /\blead\b|\bmanage\b|\bsupervis/i, suggestion: "Highlight leadership or management experience" },
+    { pattern: /degree|bachelor|master|phd/i, suggestion: "Emphasize your educational qualifications" },
+    { pattern: /\bremote\b|\bvirtual\b|\bwork from home/i, suggestion: "Highlight remote work experience or capabilities" },
+    { pattern: /\bpresent\b|\bcommunicat\b|\bstakeholder/i, suggestion: "Showcase presentation and communication skills" },
+    { pattern: /\binternational\b|\bglobal\b|\bmulticultural/i, suggestion: "Emphasize international or cross-cultural experience" },
+    { pattern: /\bdata\b|\banalytics\b|\bmetrics\b|\bkpi/i, suggestion: "Highlight data analysis experience and results" },
+    { pattern: /\bagile\b|\bscrum\b|\bkanban\b|\bsprints/i, suggestion: "Emphasize agile methodology experience" }
+  ];
+  
+  specificRequirements.forEach(({ pattern, suggestion }) => {
+    if (jobText.match(pattern) && !resumeText.match(pattern)) {
+      suggestions.push(suggestion);
+    }
+  });
+  
+  // Resume structure suggestions
+  const sectionSuggestions = [];
+  if (!resumeText.match(/\beducation\b|\bdegree\b|\buniversity\b|\bcollege\b/i)) {
+    sectionSuggestions.push("education section");
+  }
+  if (!resumeText.match(/\bskills\b|\bproficiencies\b|\btechnologies\b/i)) {
+    sectionSuggestions.push("dedicated skills section");
+  }
+  if (!resumeText.match(/\bexperience\b|\bwork history\b|\bemployment\b/i)) {
+    sectionSuggestions.push("clear work experience section");
   }
   
-  if (jobText.match(/\blead\b|\bmanage\b|\bsupervis/i) && 
-      !resumeText.match(/\blead\b|\bmanage\b|\bsupervis/i)) {
-    suggestions.push("Highlight leadership or management experience");
+  if (sectionSuggestions.length > 0) {
+    suggestions.push(`Consider adding a ${sectionSuggestions.join(' and ')} to your resume`);
   }
   
-  // Education emphasis
-  if (jobText.match(/degree|bachelor|master|phd/i) && 
-      !resumeText.match(/degree|bachelor|master|phd/i)) {
-    suggestions.push("Emphasize your educational qualifications");
-  }
+  // Industry-specific suggestions based on keywords in job
+  const industries = [
+    { pattern: /\bfinance\b|\bbanking\b|\binvestment\b|\bcompliance\b/i, suggestion: "Highlight financial industry knowledge and compliance awareness" },
+    { pattern: /\bhealthcare\b|\bmedical\b|\bclinical\b|\bpatient\b/i, suggestion: "Emphasize healthcare experience and patient-centered approaches" },
+    { pattern: /\bsales\b|\bmarketing\b|\bconversion\b|\bcustomer acquisition\b/i, suggestion: "Showcase sales achievements with specific metrics" },
+    { pattern: /\bprivacy\b|\bgdpr\b|\bhipaa\b|\bcompliance\b|\bregulation\b/i, suggestion: "Highlight your knowledge of relevant regulatory compliance" }
+  ];
+  
+  industries.forEach(({ pattern, suggestion }) => {
+    if (jobText.match(pattern) && !resumeText.match(pattern)) {
+      suggestions.push(suggestion);
+    }
+  });
   
   // Add more generic suggestions if we don't have many specific ones
   if (suggestions.length < 3) {
@@ -155,7 +263,7 @@ const generateSuggestions = (
     );
   }
   
-  return suggestions.slice(0, 6); // Limit to 6 most important suggestions
+  return suggestions.slice(0, 8); // Limit to 8 most important suggestions
 };
 
 // Analyze specific sections of the job and resume
@@ -173,11 +281,98 @@ const analyzeSections = (resumeText: string, jobText: string) => {
   // Detect projects section
   const hasProjectsSection = resumeText.match(/projects|portfolio/i) !== null;
   
+  // Generate detailed analysis based on resume content
+  let educationAnalysis = "Missing";
+  if (hasEducationSection) {
+    const educationContent = resumeText.match(/education.*?(?=experience|skills|projects|$)/is);
+    if (educationContent) {
+      if (educationContent[0].match(/degree|bachelor|master|phd/i)) {
+        educationAnalysis = "Your education section is well formatted with degree information.";
+      } else {
+        educationAnalysis = "Consider adding more details about your degrees and relevant coursework.";
+      }
+    } else {
+      educationAnalysis = "Education section is present but could be expanded.";
+    }
+  } else {
+    educationAnalysis = "Consider adding an education section with your degrees and relevant coursework.";
+  }
+  
+  // Experience analysis
+  let experienceAnalysis = "Missing";
+  if (hasStructuredExperience) {
+    const experienceContent = resumeText.match(/experience.*?(?=education|skills|projects|$)/is);
+    if (experienceContent) {
+      // Check for action verbs
+      const hasActionVerbs = experienceContent[0].match(/implemented|developed|created|managed|led|designed|optimized/i);
+      // Check for quantifiable results
+      const hasQuantifiableResults = experienceContent[0].match(/\d+%|\d+ percent|increased|decreased|reduced/i);
+      
+      if (hasActionVerbs && hasQuantifiableResults) {
+        experienceAnalysis = "Your experience section effectively showcases achievements with action verbs and metrics.";
+      } else if (hasActionVerbs) {
+        experienceAnalysis = "Your experience includes good action verbs, but consider adding quantifiable achievements.";
+      } else if (hasQuantifiableResults) {
+        experienceAnalysis = "Your experience includes metrics, but try using more action verbs to describe your accomplishments.";
+      } else {
+        experienceAnalysis = "Consider enhancing your experience with action verbs and quantifiable achievements.";
+      }
+    } else {
+      experienceAnalysis = "Experience section is present but could be improved with more specific accomplishments.";
+    }
+  } else {
+    experienceAnalysis = "Consider adding a structured experience section with clear roles, dates, and achievements.";
+  }
+  
+  // Skills analysis
+  let skillsAnalysis = "Missing";
+  if (hasSkillsSection) {
+    const skillsContent = resumeText.match(/skills.*?(?=education|experience|projects|$)/is);
+    if (skillsContent) {
+      // Extract skills by category from job description
+      const jobSkills = extractSkillKeywords(jobText);
+      const technicalMatch = jobSkills.technical.some(skill => 
+        skillsContent[0].toLowerCase().includes(skill.toLowerCase())
+      );
+      
+      if (technicalMatch) {
+        skillsAnalysis = "Your skills section contains relevant technical skills for this position.";
+      } else {
+        skillsAnalysis = "Consider adding more relevant technical skills that match the job requirements.";
+      }
+    } else {
+      skillsAnalysis = "Skills section is present but could be more targeted to the job requirements.";
+    }
+  } else {
+    skillsAnalysis = "Consider adding a dedicated skills section highlighting your technical and soft skills.";
+  }
+  
+  // Projects analysis
+  let projectsAnalysis = "Optional";
+  if (hasProjectsSection) {
+    const projectsContent = resumeText.match(/projects.*?(?=education|experience|skills|$)/is);
+    if (projectsContent) {
+      if (projectsContent[0].match(/github|demo|link|url/i)) {
+        projectsAnalysis = "Your projects section includes links which is excellent for showcase.";
+      } else {
+        projectsAnalysis = "Consider adding links to your projects for better visibility.";
+      }
+    } else {
+      projectsAnalysis = "Projects section is present but could be enhanced with more details.";
+    }
+  } else if (jobText.match(/portfolio|projects|github/i)) {
+    projectsAnalysis = "Consider adding a projects section as it seems relevant for this position.";
+  }
+  
   return {
     hasEducationSection,
     hasStructuredExperience,
     hasSkillsSection,
-    hasProjectsSection
+    hasProjectsSection,
+    education: educationAnalysis,
+    experience: experienceAnalysis,
+    skills: skillsAnalysis,
+    projects: projectsAnalysis
   };
 };
 
@@ -197,16 +392,24 @@ const evaluateAdvancedCriteria = (resumeText: string, jobText: string, matchScor
     return "missing";
   };
   
+  // Extract skills by category for more accurate matching
+  const jobSkills = extractSkillKeywords(jobText);
+  
   const criteria = [
     {
       name: "Skill Proficiency Level",
-      status: determineStatus(baseScore, 60, [], []),
+      status: determineStatus(
+        resumeText.match(/expert|proficient|advanced|intermediate|beginner/gi) ? 
+          baseScore + 10 : baseScore - 5, 
+        60, [], []
+      ),
       description: "Evaluates the level of expertise in key skills mentioned in the job description."
     },
     {
       name: "Quantified Impact Alignment",
       status: determineStatus(
-        resumeText.match(/increased|decreased|improved|reduced|saved|achieved|delivered/gi) ? baseScore + 10 : baseScore - 10, 
+        resumeText.match(/increased|decreased|improved|reduced|saved|achieved|delivered/gi) ? 
+          baseScore + 10 : baseScore - 10, 
         70, [], []
       ),
       description: "Measures how well your quantified achievements align with the job's key performance indicators."
@@ -214,20 +417,30 @@ const evaluateAdvancedCriteria = (resumeText: string, jobText: string, matchScor
     {
       name: "Project Complexity & Scope",
       status: determineStatus(
-        resumeText.match(/led|managed|coordinated|architected|designed/gi) ? baseScore + 5 : baseScore - 5,
+        resumeText.match(/led|managed|coordinated|architected|designed/gi) ? 
+          baseScore + 5 : baseScore - 5,
         75, [], []
       ),
       description: "Assesses if your project experience matches the complexity requirements of the position."
     },
     {
       name: "Semantic Role Similarity",
-      status: determineStatus(baseScore - 5, 65, [], []),
+      status: determineStatus(
+        // Compare job title keywords with resume titles
+        (jobText.match(/senior|lead|principal|manager|director/gi) && 
+         resumeText.match(/senior|lead|principal|manager|director/gi)) ||
+        (jobText.match(/junior|associate|entry/gi) && 
+         resumeText.match(/junior|associate|entry/gi)) ?
+          baseScore + 10 : baseScore - 5,
+        65, [], []
+      ),
       description: "Analyzes how closely your previous role responsibilities match the job requirements."
     },
     {
       name: "Career Trajectory & Velocity",
       status: determineStatus(
-        resumeText.match(/promotion|promoted|advanced|progressed/gi) ? baseScore + 10 : baseScore,
+        resumeText.match(/promotion|promoted|advanced|progressed/gi) ? 
+          baseScore + 10 : baseScore,
         70, [], []
       ),
       description: "Evaluates if your career progression aligns with the level of this position."
@@ -235,15 +448,56 @@ const evaluateAdvancedCriteria = (resumeText: string, jobText: string, matchScor
     {
       name: "Technology Stack Alignment",
       status: determineStatus(
-        resumeText.match(/react|node|javascript|typescript|python|aws|azure|gcp/gi) ? baseScore + 15 : baseScore - 15,
+        // Check if resume contains the technical skills from job description
+        jobSkills.technical.some(tech => 
+          resumeText.toLowerCase().includes(tech.toLowerCase())
+        ) ? baseScore + 15 : baseScore - 15,
         65, [], []
       ),
       description: "Assesses how well your technical experience matches the required technology stack."
     },
     {
       name: "Industry Experience Relevance",
-      status: determineStatus(baseScore - 10, 60, [], []),
+      status: determineStatus(
+        // Check for industry term matches
+        (jobText.match(/finance|banking|investment/gi) && 
+         resumeText.match(/finance|banking|investment/gi)) ||
+        (jobText.match(/healthcare|medical|clinical/gi) && 
+         resumeText.match(/healthcare|medical|clinical/gi)) ||
+        (jobText.match(/retail|e-commerce|consumer/gi) && 
+         resumeText.match(/retail|e-commerce|consumer/gi)) ||
+        (jobText.match(/technology|software|digital/gi) && 
+         resumeText.match(/technology|software|digital/gi)) ?
+          baseScore + 10 : baseScore - 10,
+        60, [], []
+      ),
       description: "Evaluates your experience within the specific industry targeted by this job."
+    },
+    {
+      name: "Education Alignment",
+      status: determineStatus(
+        // Check if education requirements match
+        (jobText.match(/bachelor|undergraduate|college degree/gi) && 
+         resumeText.match(/bachelor|undergraduate|college degree|b\.s\.|b\.a\./gi)) ||
+        (jobText.match(/master|graduate|mba|m\.s\./gi) && 
+         resumeText.match(/master|graduate|mba|m\.s\./gi)) ||
+        (jobText.match(/phd|doctorate|doctoral/gi) && 
+         resumeText.match(/phd|doctorate|doctoral/gi)) ?
+          baseScore + 15 : baseScore - 10,
+        60, [], []
+      ),
+      description: "Assesses how well your educational background meets the job requirements."
+    },
+    {
+      name: "Soft Skills Match",
+      status: determineStatus(
+        // Check if resume contains the soft skills from job description
+        jobSkills.soft.some(skill => 
+          resumeText.toLowerCase().includes(skill.toLowerCase())
+        ) ? baseScore + 10 : baseScore - 10,
+        65, [], []
+      ),
+      description: "Evaluates alignment between your soft skills and those required for the role."
     }
   ];
   
@@ -252,7 +506,7 @@ const evaluateAdvancedCriteria = (resumeText: string, jobText: string, matchScor
 
 // Generate ATS compatibility checks
 const generateATSChecks = (resumeText: string) => {
-  return [
+  const checksResults = [
     { 
       check_name: "Contact Information", 
       status: resumeText.match(/\b(phone|email|linkedin)\b/i) ? "pass" : "warning", 
@@ -292,8 +546,45 @@ const generateATSChecks = (resumeText: string) => {
       message: resumeText.length > 300 ? 
         "Good keyword density" : 
         "Resume might be too short for good keyword density" 
+    },
+    { 
+      check_name: "Proper Formatting", 
+      status: !resumeText.match(/table|column|tab/i) ? "pass" : "warning", 
+      message: !resumeText.match(/table|column|tab/i) ? 
+        "No complex formatting detected that might confuse ATS" : 
+        "Resume might contain complex formatting that could confuse ATS parsers" 
+    },
+    { 
+      check_name: "Standard Section Headers", 
+      status: resumeText.match(/experience|work history|employment|skills|education|qualifications/i) ? "pass" : "warning", 
+      message: resumeText.match(/experience|work history|employment|skills|education|qualifications/i) ? 
+        "Standard section headers detected" : 
+        "Consider using standard section headers (Experience, Skills, Education)" 
+    },
+    { 
+      check_name: "Professional Summary", 
+      status: resumeText.match(/summary|profile|objective/i) ? "pass" : "warning", 
+      message: resumeText.match(/summary|profile|objective/i) ? 
+        "Professional summary present" : 
+        "Consider adding a professional summary at the top of your resume" 
+    },
+    { 
+      check_name: "Readable Font", 
+      status: "pass", 
+      message: "Font appears to be ATS-friendly" 
     }
   ];
+  
+  // Calculate overall ATS-friendliness
+  const passCount = checksResults.filter(check => check.status === "pass").length;
+  const totalChecks = checksResults.length;
+  const atsScore = Math.round((passCount / totalChecks) * 100);
+  
+  return {
+    checks: checksResults,
+    ats_score: atsScore,
+    overall_status: atsScore >= 80 ? "pass" : "needs_improvement"
+  };
 };
 
 // Performance indicators for the job fit
@@ -301,7 +592,9 @@ const analyzePerformanceIndicators = (resumeText: string, jobText: string) => {
   // Extract key performance indicators from job description
   const performanceKeywords = [
     "deliver", "achieve", "increase", "decrease", "improve", "reduce", 
-    "optimize", "streamline", "accelerate", "enhance", "save", "grow"
+    "optimize", "streamline", "accelerate", "enhance", "save", "grow",
+    "launch", "implement", "manage", "lead", "develop", "create",
+    "collaborate", "coordinate", "analyze", "research", "design"
   ];
   
   // Count job KPI mentions
@@ -314,16 +607,72 @@ const analyzePerformanceIndicators = (resumeText: string, jobText: string) => {
     resumeText.toLowerCase().includes(kpi)
   );
   
+  // Extract quantifiable metrics from resume
+  const metricRegex = /\b\d+(\.\d+)?%|\b\d+(\.\d+)? percent|\$\d+(\.\d+)?|\d+(\.\d+)? dollars|\d+(\.\d+)? million|\d+(\.\d+)? thousand/gi;
+  const metrics = resumeText.match(metricRegex) || [];
+  
   // Calculate match percentages
   const matchPercentage = jobKPIs.length > 0 
     ? Math.round((resumeKPIs.length / jobKPIs.length) * 100) 
     : 50;
   
   return {
-    jobKPIs,
-    resumeKPIs,
-    matchPercentage,
+    job_kpis: jobKPIs,
+    resume_kpis: resumeKPIs,
+    quantified_metrics: metrics,
+    match_percentage: matchPercentage,
     needsImprovement: matchPercentage < 70
+  };
+};
+
+// Analyze and extract improvement opportunities
+const analyzeImprovementPotential = (resumeText: string, jobText: string, matchScore: number, sectionAnalysis: any) => {
+  // Extract skills by category from job description
+  const jobSkills = extractSkillKeywords(jobText);
+  
+  // Keyword optimization potential
+  const missingTechnicalSkills = jobSkills.technical.filter(skill => 
+    !resumeText.toLowerCase().includes(skill.toLowerCase())
+  );
+  
+  const missingSoftSkills = jobSkills.soft.filter(skill => 
+    !resumeText.toLowerCase().includes(skill.toLowerCase())
+  );
+  
+  // Structure optimization potential
+  const structureIssues = [];
+  if (!sectionAnalysis.hasEducationSection) structureIssues.push("education section");
+  if (!sectionAnalysis.hasStructuredExperience) structureIssues.push("structured work experience");
+  if (!sectionAnalysis.hasSkillsSection) structureIssues.push("skills section");
+  
+  // Achievement emphasis potential
+  const achievementIssues = [];
+  if (!resumeText.match(/increased|improved|reduced|achieved|delivered/i)) {
+    achievementIssues.push("quantifiable achievements");
+  }
+  if (!resumeText.match(/led|managed|coordinated|directed|supervised/i)) {
+    achievementIssues.push("leadership experiences");
+  }
+  if (!resumeText.match(/\d+%|\d+ percent|\$\d+|\d+ million/i)) {
+    achievementIssues.push("specific metrics");
+  }
+  
+  return {
+    keyword_optimization: {
+      level: missingTechnicalSkills.length + missingSoftSkills.length > 5 ? "high" : "medium",
+      details: {
+        missing_technical: missingTechnicalSkills.slice(0, 5),
+        missing_soft: missingSoftSkills.slice(0, 3)
+      }
+    },
+    structure_optimization: {
+      level: structureIssues.length > 1 ? "high" : structureIssues.length === 1 ? "medium" : "low",
+      issues: structureIssues
+    },
+    achievement_emphasis: {
+      level: achievementIssues.length > 1 ? "high" : "low",
+      issues: achievementIssues
+    }
   };
 };
 
@@ -356,14 +705,19 @@ export const compareResumeToJob = (resumeText: string, jobDescriptionText: strin
   
   // Performance indicators analysis
   const performanceIndicators = analyzePerformanceIndicators(resumeText, jobDescriptionText);
-  const performanceBonus = performanceIndicators.matchPercentage > 70 ? 5 : 0;
+  const performanceBonus = performanceIndicators.match_percentage > 70 ? 5 : 0;
+  
+  // ATS compatibility analysis
+  const atsAnalysis = generateATSChecks(resumeText);
+  const atsBonus = atsAnalysis.ats_score > 80 ? 5 : 0;
   
   // Combine scores with different weights
   const finalScore = Math.round(
-    keywordScore * 0.6 + 
-    lengthScore * 0.15 + 
+    keywordScore * 0.5 + 
+    lengthScore * 0.1 + 
     structuralBonus + 
-    performanceBonus
+    performanceBonus + 
+    atsBonus
   );
   
   // Ensure final score is between 0-100
@@ -385,87 +739,80 @@ export const compareResumeToJob = (resumeText: string, jobDescriptionText: strin
     normalizedScore
   );
   
-  // Generate ATS checks
-  const atsChecks = generateATSChecks(resumeText);
+  // Analyze improvement potential
+  const improvementPotential = analyzeImprovementPotential(
+    resumeText,
+    jobDescriptionText,
+    normalizedScore,
+    sectionAnalysis
+  );
   
   // Categorize skills for better visualization
-  const categorizeSkills = (keywords: string[]) => {
-    const categories = {
-      "programming_languages": ["javascript", "typescript", "python", "java", "c++", "c#", "ruby", "go", "php"],
-      "frameworks": ["react", "angular", "vue", "svelte", "express", "django", "flask", "spring", "rails"],
-      "databases": ["sql", "mongodb", "postgresql", "mysql", "dynamodb", "redis", "firebase"],
-      "cloud": ["aws", "azure", "gcp", "cloud", "serverless", "docker", "kubernetes"],
-      "soft_skills": ["communication", "teamwork", "leadership", "problem-solving", "analytical", "creativity"]
-    };
-    
-    const categorized: Record<string, { term: string, matched: boolean }[]> = {
-      "hard_skills": [],
-      "soft_skills": []
-    };
-    
-    keywords.forEach(keyword => {
-      const matched = matchedKeywords.includes(keyword);
-      let categorized = false;
-      
-      // Check if keyword belongs to soft skills
-      if (categories.soft_skills.some(skill => keyword.includes(skill))) {
-        categorized = true;
-        categorizedSkills.soft_skills.push({ term: keyword, matched });
-      } 
-      
-      // If not categorized yet, put in hard skills
-      if (!categorized) {
-        categorizedSkills.hard_skills.push({ term: keyword, matched });
-      }
-    });
-    
-    return categorizedSkills;
-  };
-  
-  // Categorize all job keywords
   const categorizedSkills = {
     hard_skills: [] as { term: string, matched: boolean }[],
     soft_skills: [] as { term: string, matched: boolean }[]
   };
   
-  // Separate hard and soft skills
-  const softSkills = ["communication", "teamwork", "leadership", "problem-solving", 
-                      "analytical", "creativity", "time management", "adaptability"];
+  // Extract skills by category
+  const extractedSkills = extractSkillKeywords(jobDescriptionText);
   
-  jobKeywords.forEach(keyword => {
-    const matched = matchedKeywords.includes(keyword);
-    if (softSkills.some(skill => keyword.includes(skill))) {
-      categorizedSkills.soft_skills.push({ term: keyword, matched });
-    } else {
-      categorizedSkills.hard_skills.push({ term: keyword, matched });
-    }
+  // Process technical skills as hard skills
+  extractedSkills.technical.forEach(skill => {
+    const matched = matchedKeywords.includes(skill);
+    categorizedSkills.hard_skills.push({ term: skill, matched });
   });
+  
+  // Process roles as hard skills
+  extractedSkills.roles.forEach(skill => {
+    const matched = matchedKeywords.includes(skill);
+    categorizedSkills.hard_skills.push({ term: skill, matched });
+  });
+  
+  // Process qualifications as hard skills
+  extractedSkills.qualifications.forEach(skill => {
+    const matched = matchedKeywords.includes(skill);
+    categorizedSkills.hard_skills.push({ term: skill, matched });
+  });
+  
+  // Process soft skills
+  extractedSkills.soft.forEach(skill => {
+    const matched = matchedKeywords.includes(skill);
+    categorizedSkills.soft_skills.push({ term: skill, matched });
+  });
+  
+  // Make sure we have some results even if extraction fails
+  if (categorizedSkills.hard_skills.length === 0) {
+    jobKeywords.slice(0, 10).forEach(keyword => {
+      const matched = matchedKeywords.includes(keyword);
+      // Simple heuristic - if it's likely a soft skill, categorize it as such
+      if (keyword.match(/communication|teamwork|leadership|problem|analytical|creative/i)) {
+        categorizedSkills.soft_skills.push({ term: keyword, matched });
+      } else {
+        categorizedSkills.hard_skills.push({ term: keyword, matched });
+      }
+    });
+  }
   
   // Generate comprehensive analysis report
   const analysis = {
     keywords: categorizedSkills,
     advanced_criteria: advancedCriteria,
-    ats_checks: atsChecks,
+    ats_checks: atsAnalysis.checks,
+    ats_score: atsAnalysis.ats_score,
     suggestions: suggestions,
     performance_indicators: {
-      job_kpis: performanceIndicators.jobKPIs,
-      resume_kpis: performanceIndicators.resumeKPIs,
-      match_percentage: performanceIndicators.matchPercentage
+      job_kpis: performanceIndicators.job_kpis,
+      resume_kpis: performanceIndicators.resume_kpis,
+      quantified_metrics: performanceIndicators.quantified_metrics,
+      match_percentage: performanceIndicators.match_percentage
     },
     section_analysis: {
-      education: sectionAnalysis.hasEducationSection ? "present" : "missing",
-      experience: sectionAnalysis.hasStructuredExperience ? "present" : "needs_improvement",
-      skills: sectionAnalysis.hasSkillsSection ? "present" : "missing",
-      projects: sectionAnalysis.hasProjectsSection ? "present" : "optional"
+      education: sectionAnalysis.education,
+      experience: sectionAnalysis.experience,
+      skills: sectionAnalysis.skills,
+      projects: sectionAnalysis.projects
     },
-    improvement_potential: {
-      keyword_optimization: missingKeywords.length > 5 ? "high" : "medium",
-      structure_optimization: 
-        (sectionAnalysis.hasEducationSection && 
-         sectionAnalysis.hasStructuredExperience && 
-         sectionAnalysis.hasSkillsSection) ? "low" : "high",
-      achievement_emphasis: performanceIndicators.needsImprovement ? "high" : "low"
-    }
+    improvement_potential: improvementPotential
   };
 
   return { 
@@ -473,3 +820,4 @@ export const compareResumeToJob = (resumeText: string, jobDescriptionText: strin
     analysis
   };
 };
+

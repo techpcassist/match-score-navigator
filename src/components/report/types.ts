@@ -22,11 +22,13 @@ export interface ReportData {
     soft_skills: Skill[];
   };
   ats_checks: ATSCheck[];
+  ats_score?: number;
   suggestions: string[];
   advanced_criteria?: AdvancedMatchCriteria[];
   performance_indicators?: {
     job_kpis: string[];
     resume_kpis: string[];
+    quantified_metrics?: string[];
     match_percentage: number;
   };
   section_analysis?: {
@@ -36,9 +38,21 @@ export interface ReportData {
     projects: string;
   };
   improvement_potential?: {
-    keyword_optimization: string;
-    structure_optimization: string;
-    achievement_emphasis: string;
+    keyword_optimization: {
+      level: string;
+      details: {
+        missing_technical: string[];
+        missing_soft: string[];
+      };
+    };
+    structure_optimization: {
+      level: string;
+      issues: string[];
+    };
+    achievement_emphasis: {
+      level: string;
+      issues: string[];
+    };
   };
 }
 

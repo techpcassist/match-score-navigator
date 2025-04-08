@@ -12,11 +12,13 @@ import { ATSChecksSection } from './ATSChecksSection';
 import { SuggestionsSection } from './SuggestionsSection';
 
 const ReportView = ({ matchScore, report }: ReportViewProps) => {
+  const atsScore = report.ats_score || 0;
+  
   return (
     <Card className="mb-8">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Resume Analysis Results</CardTitle>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-center gap-2">
           <span className="text-sm font-medium">Match Score:</span>
           <Badge 
             className={`text-lg px-3 py-1 ${matchScore >= 80 
@@ -27,6 +29,21 @@ const ReportView = ({ matchScore, report }: ReportViewProps) => {
           >
             {matchScore}%
           </Badge>
+          
+          {atsScore > 0 && (
+            <>
+              <span className="text-sm font-medium ml-2">ATS Score:</span>
+              <Badge 
+                className={`text-lg px-3 py-1 ${atsScore >= 80 
+                  ? 'bg-green-500 hover:bg-green-600' 
+                  : atsScore >= 60 
+                    ? 'bg-yellow-500 hover:bg-yellow-600' 
+                    : 'bg-red-500 hover:bg-red-600'}`}
+              >
+                {atsScore}%
+              </Badge>
+            </>
+          )}
         </div>
       </CardHeader>
       <CardContent>
