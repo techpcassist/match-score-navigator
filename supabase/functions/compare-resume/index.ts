@@ -83,7 +83,8 @@ serve(async (req) => {
       console.log("Created new job description with ID:", jobData.id);
     }
     
-    // Perform the comparison - now asynchronously
+    // Perform the comparison using the Google Generative AI approach
+    console.log("Calling compareResumeToJob with Google Generative AI integration");
     const comparisonResult = await compareResumeToJob(resume_text, job_description_text);
     
     // Store the comparison result
