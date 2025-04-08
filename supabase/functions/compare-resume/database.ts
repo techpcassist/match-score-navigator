@@ -33,6 +33,7 @@ export class DatabaseHandler {
 
   // Store resume in database
   async storeResume(resumeText: string, filePath: string | null): Promise<ResumeData> {
+    // We need to cast the result to handle the type mismatch between runtime and TypeScript types
     const { data, error } = await this.supabase
       .from('resumes')
       .insert([{ 
@@ -43,7 +44,13 @@ export class DatabaseHandler {
       .single();
       
     if (error) throw error;
-    return data;
+    
+    // Add file_path to the returned data if it's not included in the type
+    return {
+      id: data.id,
+      resume_text: data.resume_text,
+      file_path: filePath
+    };
   }
 
   // Store job description in database
