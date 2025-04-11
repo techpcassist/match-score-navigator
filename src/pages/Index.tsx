@@ -161,7 +161,9 @@ const Index = () => {
         <ReportView 
           matchScore={matchScore} 
           report={report}
-          userRole={selectedRole} // Pass the role to show in the report
+          userRole={selectedRole}
+          resumeText={resumeText}
+          jobDescriptionText={jobDescriptionText}
         />
       )}
     </div>

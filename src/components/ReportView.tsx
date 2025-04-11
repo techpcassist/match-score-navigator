@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScoreDisplay } from './report/ScoreDisplay';
 import { KeywordsSection } from './report/KeywordsSection';
@@ -8,16 +9,22 @@ import { SuggestionsSection } from './report/SuggestionsSection';
 import { PerformanceSection } from './report/PerformanceSection';
 import { StructureAnalysisSection } from './report/StructureAnalysisSection';
 import { Badge } from '@/components/ui/badge';
-import { UserCircle, Briefcase } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MagicWand, UserCircle, Briefcase } from 'lucide-react';
 import { UserRole } from './RoleSelectionModal';
+import { OptimizationPanel } from './resume-optimization/OptimizationPanel';
 
 interface ReportViewProps {
   matchScore: number;
   report: any;
   userRole?: UserRole | null;
+  resumeText?: string;
+  jobDescriptionText?: string;
 }
 
-const ReportView = ({ matchScore, report, userRole }: ReportViewProps) => {
+const ReportView = ({ matchScore, report, userRole, resumeText = '', jobDescriptionText = '' }: ReportViewProps) => {
+  const [showOptimizationPanel, setShowOptimizationPanel] = useState(false);
+  
   // Role label elements
   const RoleLabel = () => {
     if (!userRole) return null;
@@ -39,52 +46,79 @@ const ReportView = ({ matchScore, report, userRole }: ReportViewProps) => {
     );
   };
 
+  const handleOptimizeClick = () => {
+    setShowOptimizationPanel(true);
+  };
+
   return (
-    <Card className="w-full mb-8">
-      <CardHeader className="pb-3">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center">
-          <CardTitle className="text-2xl font-bold">Match Analysis</CardTitle>
-          <RoleLabel />
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <ScoreDisplay matchScore={matchScore} />
+    <div className="space-y-8">
+      {showOptimizationPanel ? (
+        <OptimizationPanel 
+          resumeText={resumeText}
+          jobDescriptionText={jobDescriptionText}
+          analysisReport={report}
+          onClose={() => setShowOptimizationPanel(false)}
+        />
+      ) : (
+        <Card className="w-full mb-8">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center">
+                <CardTitle className="text-2xl font-bold">Match Analysis</CardTitle>
+                <RoleLabel />
+              </div>
+              
+              {userRole === 'job_seeker' && (
+                <Button 
+                  className="mt-4 sm:mt-0"
+                  onClick={handleOptimizeClick}
+                >
+                  <MagicWand className="h-4 w-4 mr-2" />
+                  Optimize with AI
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ScoreDisplay matchScore={matchScore} />
 
-        {report.keywords && (
-          <KeywordsSection 
-            hardSkills={report.keywords.hard_skills} 
-            softSkills={report.keywords.soft_skills} 
-          />
-        )}
-        
-        {report.ats_checks && (
-          <ATSChecksSection 
-            checks={report.ats_checks} 
-          />
-        )}
-        
-        {report.advanced_criteria && (
-          <AdvancedCriteriaSection criteria={report.advanced_criteria} />
-        )}
-        
-        {report.performance_indicators && (
-          <PerformanceSection 
-            performanceIndicators={report.performance_indicators} 
-          />
-        )}
+            {report.keywords && (
+              <KeywordsSection 
+                hardSkills={report.keywords.hard_skills} 
+                softSkills={report.keywords.soft_skills} 
+              />
+            )}
+            
+            {report.ats_checks && (
+              <ATSChecksSection 
+                checks={report.ats_checks} 
+              />
+            )}
+            
+            {report.advanced_criteria && (
+              <AdvancedCriteriaSection criteria={report.advanced_criteria} />
+            )}
+            
+            {report.performance_indicators && (
+              <PerformanceSection 
+                performanceIndicators={report.performance_indicators} 
+              />
+            )}
 
-        {report.section_analysis && (
-          <StructureAnalysisSection 
-            sectionAnalysis={report.section_analysis}
-            improvementPotential={report.improvement_potential}
-          />
-        )}
-        
-        {report.suggestions && (
-          <SuggestionsSection suggestions={report.suggestions} />
-        )}
-      </CardContent>
-    </Card>
+            {report.section_analysis && (
+              <StructureAnalysisSection 
+                sectionAnalysis={report.section_analysis}
+                improvementPotential={report.improvement_potential}
+              />
+            )}
+            
+            {report.suggestions && (
+              <SuggestionsSection suggestions={report.suggestions} />
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 
