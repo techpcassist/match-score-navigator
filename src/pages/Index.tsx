@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import InputCard from '@/components/InputCard';
 import ReportView from '@/components/ReportView';
 import { extractTextFromFile, uploadResumeFile } from '@/utils/fileProcessor';
+import RoleSelectionModal, { UserRole } from '@/components/RoleSelectionModal';
 
 const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -19,8 +20,10 @@ const Index = () => {
   const [lastJobText, setLastJobText] = useState<string>('');
   const [lastResumeId, setLastResumeId] = useState<string | null>(null);
   const [lastJobId, setLastJobId] = useState<string | null>(null);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
-  const handleScan = async () => {
+  const handleScanClick = () => {
     // Check if we have enough input to analyze
     if ((!resumeFile && resumeText.trim() === '') || 
         (!jobDescriptionFile && jobDescriptionText.trim() === '')) {
@@ -32,6 +35,16 @@ const Index = () => {
       return;
     }
 
+    // Show the role selection modal instead of immediately analyzing
+    setShowRoleModal(true);
+  };
+
+  const handleRoleConfirm = async (role: UserRole) => {
+    setSelectedRole(role);
+    await performAnalysis(role);
+  };
+
+  const performAnalysis = async (userRole: UserRole) => {
     setIsAnalyzing(true);
     
     try {
@@ -82,7 +95,8 @@ const Index = () => {
           job_description_text: finalJobText,
           resume_file_path: storedFilePath,
           resume_id: resumeId,
-          job_id: jobId
+          job_id: jobId,
+          user_role: userRole // Include the selected role
         }
       });
       
@@ -132,14 +146,22 @@ const Index = () => {
         setJobDescriptionText={setJobDescriptionText}
         isAnalyzing={isAnalyzing}
         canAnalyze={canAnalyze}
-        onAnalyze={handleScan}
+        onAnalyze={handleScanClick}  // Changed from handleScan to handleScanClick
+      />
+      
+      {/* Role Selection Modal */}
+      <RoleSelectionModal 
+        isOpen={showRoleModal} 
+        onClose={() => setShowRoleModal(false)} 
+        onConfirm={handleRoleConfirm}
       />
       
       {/* Results Section */}
       {matchScore !== null && report && (
         <ReportView 
           matchScore={matchScore} 
-          report={report} 
+          report={report}
+          userRole={selectedRole} // Pass the role to show in the report
         />
       )}
     </div>

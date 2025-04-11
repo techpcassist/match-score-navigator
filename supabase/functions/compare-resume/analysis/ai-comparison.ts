@@ -14,7 +14,11 @@ export interface ComparisonResult {
  * Main function to compare resume to job description using AI
  * Falls back to basic comparison if AI analysis fails
  */
-export const compareResumeToJob = async (resumeText: string, jobDescriptionText: string): Promise<ComparisonResult> => {
+export const compareResumeToJob = async (
+  resumeText: string, 
+  jobDescriptionText: string,
+  userRole?: string
+): Promise<ComparisonResult> => {
   if (!resumeText || !jobDescriptionText) {
     return { match_score: 0, analysis: {} };
   }
@@ -22,9 +26,10 @@ export const compareResumeToJob = async (resumeText: string, jobDescriptionText:
   try {
     // Attempt to use Google's Generative AI for enhanced analysis
     console.log("Attempting to use Google Generative AI for resume analysis...");
+    console.log("User role for analysis:", userRole || "not specified");
     
-    // Make an asynchronous call to the AI API
-    const aiResponse = await callGenerativeAI(resumeText, jobDescriptionText);
+    // Make an asynchronous call to the AI API with the user role
+    const aiResponse = await callGenerativeAI(resumeText, jobDescriptionText, userRole);
     
     // Check if AI call was successful
     if (aiResponse.success) {

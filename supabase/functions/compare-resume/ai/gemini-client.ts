@@ -16,10 +16,12 @@ export interface AIAnalysisResponse {
  */
 export const callGenerativeAI = async (
   resumeText: string, 
-  jobText: string
+  jobText: string,
+  userRole?: string
 ): Promise<AIAnalysisResponse> => {
   try {
     console.log("Making API call to Google Generative AI...");
+    console.log("User role:", userRole || "not specified");
     
     // Get API key from environment variable
     const apiKey = Deno.env.get("GOOGLE_GENERATIVE_AI_KEY");
@@ -45,8 +47,8 @@ export const callGenerativeAI = async (
       ],
     });
     
-    // Create the prompt for the analysis
-    const prompt = createAnalysisPrompt(resumeText, jobText);
+    // Create the prompt for the analysis with role-specific instructions
+    const prompt = createAnalysisPrompt(resumeText, jobText, userRole);
     
     // Generate content using the model
     const result = await model.generateContent(prompt);
@@ -82,8 +84,9 @@ export const callGenerativeAI = async (
 /**
  * Creates a structured prompt for the AI to analyze the resume and job description
  */
-function createAnalysisPrompt(resumeText: string, jobText: string): string {
-  return `
+function createAnalysisPrompt(resumeText: string, jobText: string, userRole?: string): string {
+  // Base analysis prompt
+  let prompt = `
   Analyze this resume and job description for a match:
   
   RESUME:
@@ -91,7 +94,29 @@ function createAnalysisPrompt(resumeText: string, jobText: string): string {
   
   JOB DESCRIPTION:
   ${jobText}
+  `;
   
+  // Add role-specific instructions
+  if (userRole === "job_seeker") {
+    prompt += `
+  PERSPECTIVE: JOB SEEKER
+  Analyze this from the perspective of the Job Seeker trying to improve their resume for this specific job. 
+  Focus heavily on identifying missing keywords they should add, providing actionable ATS formatting advice, 
+  and phrasing suggestions for self-improvement. Emphasize specific changes the candidate can make to improve 
+  their chances. De-emphasize comparative evaluation unless relevant for improvement.
+    `;
+  } else if (userRole === "recruiter") {
+    prompt += `
+  PERSPECTIVE: RECRUITER
+  Analyze this from the perspective of a Recruiter evaluating this candidate's resume against the job description. 
+  Focus on highlighting the degree of alignment with key requirements, clearly stating critical skill gaps, 
+  providing concise justifications for advanced criteria assessments, and summarizing overall suitability. 
+  Emphasize qualitative evaluation of the candidate's fit for the role. Less detail needed on generic ATS advice.
+    `;
+  }
+  
+  // Add the required JSON structure for output
+  prompt += `
   Respond with a JSON object containing the following structure:
   {
     "match_score": number (0-100),
@@ -139,4 +164,6 @@ function createAnalysisPrompt(resumeText: string, jobText: string): string {
   }
   
   Return ONLY valid JSON without any markdown formatting or explanations. The analysis should be specific to the job type mentioned in the job description, identifying appropriate skills and requirements for that particular industry.`;
+
+  return prompt;
 }

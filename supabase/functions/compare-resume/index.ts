@@ -21,7 +21,8 @@ serve(async (req) => {
       job_description_text, 
       resume_file_path,
       resume_id,
-      job_id
+      job_id,
+      user_role
     } = await req.json();
     
     // Validate inputs
@@ -29,6 +30,19 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Both resume_text and job_description_text are required" 
+        }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
+    // Validate user_role if provided
+    if (user_role && !['job_seeker', 'recruiter'].includes(user_role)) {
+      return new Response(
+        JSON.stringify({ 
+          error: "user_role must be either 'job_seeker' or 'recruiter'" 
         }), 
         { 
           status: 400, 
@@ -85,7 +99,8 @@ serve(async (req) => {
     
     // Perform the comparison using the Google Generative AI approach
     console.log("Calling compareResumeToJob with Google Generative AI integration");
-    const comparisonResult = await compareResumeToJob(resume_text, job_description_text);
+    console.log("Using user role:", user_role || "not specified");
+    const comparisonResult = await compareResumeToJob(resume_text, job_description_text, user_role);
     
     try {
       // Store the comparison result - handle potential duplicate key errors
@@ -104,7 +119,8 @@ serve(async (req) => {
           comparison_id: comparisonData.id,
           match_score: comparisonResult.match_score,
           report: comparisonResult.analysis,
-          resume_file_path
+          resume_file_path,
+          user_role: user_role || null
         }),
         { 
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -123,6 +139,7 @@ serve(async (req) => {
           match_score: comparisonResult.match_score,
           report: comparisonResult.analysis,
           resume_file_path,
+          user_role: user_role || null,
           warning: "Existing comparison was retrieved"
         }),
         { 
