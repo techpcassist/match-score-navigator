@@ -51,11 +51,16 @@ const ReportView = ({ matchScore, report, userRole }: ReportViewProps) => {
         <ScoreDisplay matchScore={matchScore} />
 
         {report.keywords && (
-          <KeywordsSection keywords={report.keywords} />
+          <KeywordsSection 
+            hardSkills={report.keywords.hard_skills} 
+            softSkills={report.keywords.soft_skills} 
+          />
         )}
         
         {report.ats_checks && (
-          <ATSChecksSection atsChecks={report.ats_checks} atsScore={report.ats_score} />
+          <ATSChecksSection 
+            checks={report.ats_checks} 
+          />
         )}
         
         {report.advanced_criteria && (
@@ -63,11 +68,16 @@ const ReportView = ({ matchScore, report, userRole }: ReportViewProps) => {
         )}
         
         {report.performance_indicators && (
-          <PerformanceSection indicators={report.performance_indicators} />
+          <PerformanceSection 
+            performanceIndicators={report.performance_indicators} 
+          />
         )}
 
         {report.section_analysis && (
-          <StructureAnalysisSection analysis={report.section_analysis} />
+          <StructureAnalysisSection 
+            sectionAnalysis={report.section_analysis}
+            improvementPotential={report.improvement_potential}
+          />
         )}
         
         {report.suggestions && (
