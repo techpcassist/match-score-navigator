@@ -10,7 +10,7 @@ import { PerformanceSection } from './report/PerformanceSection';
 import { StructureAnalysisSection } from './report/StructureAnalysisSection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MagicWand, UserCircle, Briefcase } from 'lucide-react';
+import { Wand, UserCircle, Briefcase } from 'lucide-react';  // Changed MagicWand to Wand
 import { UserRole } from './RoleSelectionModal';
 import { OptimizationPanel } from './resume-optimization/OptimizationPanel';
 
@@ -73,7 +73,7 @@ const ReportView = ({ matchScore, report, userRole, resumeText = '', jobDescript
                   className="mt-4 sm:mt-0"
                   onClick={handleOptimizeClick}
                 >
-                  <MagicWand className="h-4 w-4 mr-2" />
+                  <Wand className="h-4 w-4 mr-2" />
                   Optimize with AI
                 </Button>
               )}
@@ -123,3 +123,4 @@ const ReportView = ({ matchScore, report, userRole, resumeText = '', jobDescript
 };
 
 export default ReportView;
+
