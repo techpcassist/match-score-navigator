@@ -6,10 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SuggestionsList } from './SuggestionsList';
 import { MissingInfoForm } from './MissingInfoForm';
 import { ResumeEditor } from './ResumeEditor';
-import { KeywordSuggestion, MissingInfo, SectionSuggestion, FormattingSuggestion, ResumeAnalysisData, WorkExperienceEntry, ProjectEntry, MissingSection } from './types';
+import { KeywordSuggestion, MissingInfo, SectionSuggestion, FormattingSuggestion, ResumeAnalysisData, WorkExperienceEntry, ProjectEntry, MissingSection, Education } from './types';
 import { SectionCheckList } from './SectionCheckList';
 import { WorkExperienceForm } from './WorkExperienceForm';
 import { ProjectsForm } from './ProjectsForm';
+import { EducationForm } from './EducationForm';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 
@@ -27,14 +28,17 @@ export const OptimizationPanel = ({ resumeText, jobDescriptionText, analysisRepo
   const [appliedSuggestions, setAppliedSuggestions] = useState<string[]>([]);
   const [workExperienceEntries, setWorkExperienceEntries] = useState<WorkExperienceEntry[]>([]);
   const [projectEntries, setProjectEntries] = useState<ProjectEntry[]>([]);
+  const [educationEntries, setEducationEntries] = useState<Education[]>([]);
   const [missingSections, setMissingSections] = useState<MissingSection[]>([]);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const totalSteps = 5;
+  const totalSteps = 6; // Updated to include education step
   
   // Extract suggestions and analysis data from the report
   useEffect(() => {
     // Parse work experience data
     parseResumeForWorkExperience();
+    // Parse education data
+    parseResumeForEducation();
     // Identify missing sections
     identifyMissingSections();
     // Mark first step as viewed
@@ -72,7 +76,8 @@ export const OptimizationPanel = ({ resumeText, jobDescriptionText, analysisRepo
               title: currentEntry.title || '',
               startDate: currentEntry.startDate || '',
               endDate: currentEntry.endDate || '',
-              description: currentEntry.description || ''
+              description: currentEntry.description || '',
+              companyLocation: { country: '', state: '', city: '' }
             });
           }
           
@@ -109,11 +114,124 @@ export const OptimizationPanel = ({ resumeText, jobDescriptionText, analysisRepo
         title: currentEntry.title || '',
         startDate: currentEntry.startDate || '',
         endDate: currentEntry.endDate || '',
-        description: currentEntry.description || ''
+        description: currentEntry.description || '',
+        companyLocation: { country: '', state: '', city: '' }
       });
     }
     
     setWorkExperienceEntries(entries);
+  };
+  
+  // Parse the resume text to extract education entries
+  const parseResumeForEducation = () => {
+    const lines = resumeText.split('\n');
+    const entries: Education[] = [];
+    let currentEntry: Partial<Education> = {};
+    let isInEducationSection = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Simple section detection
+      if (line.toLowerCase().includes('education') && line.length < 30) {
+        isInEducationSection = true;
+        continue;
+      }
+      
+      if (isInEducationSection) {
+        // Detect new education entry
+        if (line.length > 0 && line.length < 100 && !line.startsWith('-') && !line.startsWith('•')) {
+          // Save previous entry if exists
+          if (currentEntry.degree || currentEntry.university) {
+            entries.push({
+              id: `edu-${entries.length}`,
+              degree: currentEntry.degree || '',
+              fieldOfStudy: currentEntry.fieldOfStudy || '',
+              university: currentEntry.university || '',
+              startDate: currentEntry.startDate || '',
+              endDate: currentEntry.endDate || '',
+              country: '',
+              state: '',
+              customUniversity: false
+            });
+          }
+          
+          // Try to extract university and degree
+          if (line.includes(',')) {
+            // Format: "University Name, Degree"
+            const parts = line.split(',');
+            currentEntry = {
+              university: parts[0].trim(),
+              degree: parts.slice(1).join(',').trim()
+            };
+          } else if (line.includes('-')) {
+            // Format: "Degree - University Name"
+            const parts = line.split('-');
+            currentEntry = {
+              degree: parts[0].trim(),
+              university: parts.slice(1).join('-').trim()
+            };
+          } else {
+            // Can't determine format, just use as university
+            currentEntry = {
+              university: line,
+              degree: ''
+            };
+          }
+        }
+        // Detect dates
+        else if (line.match(/\d{4}/)) {
+          const dates = line.match(/\d{2}\/\d{4}|\d{4}|[A-Za-z]+\s+\d{4}|Present/g);
+          if (dates && dates.length > 0) {
+            currentEntry.startDate = dates[0];
+            currentEntry.endDate = dates.length > 1 ? dates[1] : 'Present';
+          }
+        }
+        // Detect field of study if not part of degree
+        else if (line.length > 0 && line.length < 60 && !currentEntry.fieldOfStudy) {
+          currentEntry.fieldOfStudy = line;
+        }
+        // If next section starts, break
+        else if (line.length > 0 && line.length < 30 && 
+          (line.toLowerCase().includes('experience') || 
+           line.toLowerCase().includes('skills') || 
+           line.toLowerCase().includes('projects'))) {
+          isInEducationSection = false;
+        }
+      }
+    }
+    
+    // Add the last entry
+    if (currentEntry.degree || currentEntry.university) {
+      entries.push({
+        id: `edu-${entries.length}`,
+        degree: currentEntry.degree || '',
+        fieldOfStudy: currentEntry.fieldOfStudy || '',
+        university: currentEntry.university || '',
+        startDate: currentEntry.startDate || '',
+        endDate: currentEntry.endDate || '',
+        country: '',
+        state: '',
+        customUniversity: false
+      });
+    }
+    
+    // If no entries were found but education section exists, add an empty one
+    if (entries.length === 0 && isInEducationSection) {
+      entries.push({
+        id: 'edu-0',
+        degree: '',
+        fieldOfStudy: '',
+        university: '',
+        startDate: '',
+        endDate: '',
+        country: '',
+        state: '',
+        customUniversity: false
+      });
+    }
+    
+    setEducationEntries(entries);
   };
   
   // Identify missing sections based on the resume and job description
@@ -310,6 +428,10 @@ export const OptimizationPanel = ({ resumeText, jobDescriptionText, analysisRepo
     setWorkExperienceEntries(updatedEntries);
   };
   
+  const handleEducationUpdate = (updatedEntries: Education[]) => {
+    setEducationEntries(updatedEntries);
+  };
+  
   const handleProjectsUpdate = (updatedProjects: ProjectEntry[]) => {
     setProjectEntries(updatedProjects);
   };
@@ -367,7 +489,7 @@ export const OptimizationPanel = ({ resumeText, jobDescriptionText, analysisRepo
             <CardHeader>
               <CardTitle>Step 2: Work Experience Details</CardTitle>
               <CardDescription>
-                Ensure your work experience entries have all required information, especially dates and metrics.
+                Ensure your work experience entries have all required information, especially dates and location.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -382,7 +504,24 @@ export const OptimizationPanel = ({ resumeText, jobDescriptionText, analysisRepo
         return (
           <div className="space-y-6">
             <CardHeader>
-              <CardTitle>Step 3: Add Relevant Projects</CardTitle>
+              <CardTitle>Step 3: Education Details</CardTitle>
+              <CardDescription>
+                Complete your education information with institutions and degrees.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EducationForm
+                entries={educationEntries}
+                onChange={handleEducationUpdate}
+              />
+            </CardContent>
+          </div>
+        );
+      case 4:
+        return (
+          <div className="space-y-6">
+            <CardHeader>
+              <CardTitle>Step 4: Add Relevant Projects</CardTitle>
               <CardDescription>
                 Projects demonstrate practical application of your skills relevant to the job.
               </CardDescription>
@@ -398,11 +537,11 @@ export const OptimizationPanel = ({ resumeText, jobDescriptionText, analysisRepo
             </CardContent>
           </div>
         );
-      case 4:
+      case 5:
         return (
           <div className="space-y-6">
             <CardHeader>
-              <CardTitle>Step 4: Review Suggestions</CardTitle>
+              <CardTitle>Step 5: Review Suggestions</CardTitle>
               <CardDescription>
                 Review AI-generated suggestions to optimize your resume for this job.
               </CardDescription>
@@ -417,11 +556,11 @@ export const OptimizationPanel = ({ resumeText, jobDescriptionText, analysisRepo
             </CardContent>
           </div>
         );
-      case 5:
+      case 6:
         return (
           <div className="space-y-6">
             <CardHeader>
-              <CardTitle>Step 5: Finalize Resume</CardTitle>
+              <CardTitle>Step 6: Finalize Resume</CardTitle>
               <CardDescription>
                 Review and edit your optimized resume before finalizing.
               </CardDescription>

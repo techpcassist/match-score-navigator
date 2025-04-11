@@ -31,13 +31,35 @@ export interface MissingInfo {
   section: string;
 }
 
+export interface Location {
+  country: string;
+  state?: string;
+  city?: string;
+}
+
 export interface WorkExperienceEntry {
   id: string;
   company?: string;
+  companyLocation?: Location;
   title?: string;
   startDate?: string;
   endDate?: string;
   description?: string;
+  teamSize?: number;
+  teamName?: string;
+  projectName?: string;
+}
+
+export interface Education {
+  id: string;
+  degree?: string;
+  fieldOfStudy?: string;
+  university?: string;
+  country?: string;
+  state?: string;
+  startDate?: string;
+  endDate?: string;
+  customUniversity?: boolean;
 }
 
 export interface ProjectEntry {
