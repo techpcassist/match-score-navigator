@@ -1,12 +1,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import ScoreDisplay from './report/ScoreDisplay';
-import KeywordsSection from './report/KeywordsSection';
-import ATSChecksSection from './report/ATSChecksSection';
-import AdvancedCriteriaSection from './report/AdvancedCriteriaSection';
-import SuggestionsSection from './report/SuggestionsSection';
-import PerformanceSection from './report/PerformanceSection';
-import StructureAnalysisSection from './report/StructureAnalysisSection';
+import { ScoreDisplay } from './report/ScoreDisplay';
+import { KeywordsSection } from './report/KeywordsSection';
+import { ATSChecksSection } from './report/ATSChecksSection';
+import { AdvancedCriteriaSection } from './report/AdvancedCriteriaSection';
+import { SuggestionsSection } from './report/SuggestionsSection';
+import { PerformanceSection } from './report/PerformanceSection';
+import { StructureAnalysisSection } from './report/StructureAnalysisSection';
 import { Badge } from '@/components/ui/badge';
 import { UserCircle, Briefcase } from 'lucide-react';
 import { UserRole } from './RoleSelectionModal';
