@@ -123,4 +123,3 @@ const ReportView = ({ matchScore, report, userRole, resumeText = '', jobDescript
 };
 
 export default ReportView;
-
