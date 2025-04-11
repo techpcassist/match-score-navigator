@@ -4,6 +4,9 @@ import Index from './pages/Index'
 import NotFound from './pages/NotFound'
 import { Toaster } from "@/components/ui/toaster"
 
+// Fixing the React context issue by importing React explicitly
+import React from 'react'
+
 const App = () => {
   return (
     <Router>

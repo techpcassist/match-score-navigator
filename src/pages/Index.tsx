@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import InputCard from '@/components/InputCard';
@@ -127,6 +127,8 @@ const Index = () => {
       });
     } finally {
       setIsAnalyzing(false);
+      // Close the role modal after analysis is complete
+      setShowRoleModal(false);
     }
   };
 
@@ -146,11 +148,12 @@ const Index = () => {
         setJobDescriptionText={setJobDescriptionText}
         isAnalyzing={isAnalyzing}
         canAnalyze={canAnalyze}
-        onAnalyze={handleScanClick}  // Changed from handleScan to handleScanClick
+        onAnalyze={handleScanClick}
       />
       
-      {/* Role Selection Modal */}
+      {/* Role Selection Modal with key prop to force remount */}
       <RoleSelectionModal 
+        key={`role-modal-${showRoleModal}`}
         isOpen={showRoleModal} 
         onClose={() => setShowRoleModal(false)} 
         onConfirm={handleRoleConfirm}

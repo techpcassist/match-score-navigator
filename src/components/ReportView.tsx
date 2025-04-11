@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScoreDisplay } from './report/ScoreDisplay';
 import { KeywordsSection } from './report/KeywordsSection';
@@ -10,7 +10,7 @@ import { PerformanceSection } from './report/PerformanceSection';
 import { StructureAnalysisSection } from './report/StructureAnalysisSection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Wand, UserCircle, Briefcase } from 'lucide-react';  // Changed MagicWand to Wand
+import { Wand, UserCircle, Briefcase } from 'lucide-react';
 import { UserRole } from './RoleSelectionModal';
 import { OptimizationPanel } from './resume-optimization/OptimizationPanel';
 

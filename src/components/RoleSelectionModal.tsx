@@ -27,12 +27,13 @@ const RoleSelectionModal = ({ isOpen, onClose, onConfirm }: RoleSelectionModalPr
   const handleConfirm = () => {
     if (selectedRole) {
       onConfirm(selectedRole);
-      onClose();
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl">Analyze as:</DialogTitle>
