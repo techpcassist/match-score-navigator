@@ -99,7 +99,7 @@ export const WorkExperienceForm = ({ entries, onChange }: WorkExperienceFormProp
   if (entries.length === 0) {
     return (
       <div className="text-center py-6">
-        <p className="text-muted-foreground mb-4">No work experience entries detected in your resume.</p>
+        <p className="text-muted-foreground mb-4">We couldn't automatically detect your work experience. Let's add it now.</p>
         <Button onClick={addNewEntry}>Add Work Experience</Button>
       </div>
     );
