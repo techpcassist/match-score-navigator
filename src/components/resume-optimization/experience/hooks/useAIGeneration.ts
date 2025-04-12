@@ -22,13 +22,13 @@ export const useAIGeneration = (title: string, description: string) => {
         setSuggestedDuty(aiSuggestion);
       } else {
         // Fallback to pre-defined suggestions if AI call fails
-        const duty = generateJobDutySuggestion(title);
+        const duty = await generateJobDutySuggestion(title);
         setSuggestedDuty(duty);
       }
     } catch (error) {
       console.error("Error generating duty suggestion:", error);
       // Fallback to pre-defined suggestions
-      const duty = generateJobDutySuggestion(title);
+      const duty = await generateJobDutySuggestion(title);
       setSuggestedDuty(duty);
       
       toast({
