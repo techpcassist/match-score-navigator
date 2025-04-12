@@ -1,6 +1,7 @@
 
 import { callGenerativeAI } from "../ai/gemini-client.ts";
 import { performBasicComparison } from "./basic-comparison.ts";
+import { UserRole } from "../ai/types.ts";
 
 /**
  * Interface for the result of the resume comparison
@@ -17,7 +18,7 @@ export interface ComparisonResult {
 export const compareResumeToJob = async (
   resumeText: string, 
   jobDescriptionText: string,
-  userRole?: string
+  userRole?: UserRole
 ): Promise<ComparisonResult> => {
   if (!resumeText || !jobDescriptionText) {
     return { match_score: 0, analysis: {} };

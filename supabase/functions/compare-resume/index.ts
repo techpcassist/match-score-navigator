@@ -1,7 +1,7 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { compareResumeToJob } from "./analysis/ai-comparison.ts";
 import { DatabaseHandler } from "./database.ts";
+import { UserRole } from "./ai/types.ts";
 
 // CORS headers for browser access
 const corsHeaders = {
@@ -100,7 +100,7 @@ serve(async (req) => {
     // Perform the comparison using the Google Generative AI approach
     console.log("Calling compareResumeToJob with Google Generative AI integration");
     console.log("Using user role:", user_role || "not specified");
-    const comparisonResult = await compareResumeToJob(resume_text, job_description_text, user_role);
+    const comparisonResult = await compareResumeToJob(resume_text, job_description_text, user_role as UserRole);
     
     try {
       // Store the comparison result - handle potential duplicate key errors
