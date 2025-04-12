@@ -22,7 +22,8 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
 
   // Handle parse resume action
   const handleParseResume = () => {
-    if (!resumeText?.trim()) {
+    // Check if resumeText exists and is not empty
+    if (!resumeText || resumeText.trim() === '') {
       toast({
         title: "No resume found",
         description: "Please upload or paste your resume before optimizing.",
