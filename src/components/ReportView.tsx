@@ -30,20 +30,16 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
       localResumeText={localResumeText}
       localJobText={localJobText}
     >
-      <ReportViewMain
-        matchScore={matchScore}
-        report={report}
-        userRole={userRole}
-        resumeText={resumeText}
-        localResumeText={localResumeText}
-        onParseResume={() => {
-          // This will be handled by the ResumeOptimizationHandler component
-          const handler = document.getElementById('parse-resume-handler');
-          if (handler && typeof handler.click === 'function') {
-            handler.click();
-          }
-        }}
-      />
+      {(handleParseResume) => (
+        <ReportViewMain
+          matchScore={matchScore}
+          report={report}
+          userRole={userRole}
+          resumeText={resumeText}
+          localResumeText={localResumeText}
+          onParseResume={handleParseResume}
+        />
+      )}
     </ResumeOptimizationHandler>
   );
 };

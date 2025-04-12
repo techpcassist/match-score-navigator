@@ -11,7 +11,7 @@ interface ResumeOptimizationHandlerProps {
   jobDescriptionText: string;
   localResumeText: string;
   localJobText: string;
-  children: React.ReactNode;
+  children: (handleParseResume: () => void) => React.ReactNode;
 }
 
 export const ResumeOptimizationHandler: React.FC<ResumeOptimizationHandlerProps> = ({
@@ -103,7 +103,7 @@ export const ResumeOptimizationHandler: React.FC<ResumeOptimizationHandlerProps>
 
   return (
     <>
-      {children}
+      {children(handleParseResume)}
       
       {/* Parsing Modal */}
       {showParsingModal && (

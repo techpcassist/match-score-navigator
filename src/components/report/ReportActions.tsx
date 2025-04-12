@@ -71,6 +71,7 @@ export const ReportActions: React.FC<ReportActionsProps> = ({
         variant="default" 
         size="lg"
         className="flex items-center"
+        id="optimize-ai-button"
       >
         <Sparkles className="mr-2" />
         Optimize with AI Suggestions
