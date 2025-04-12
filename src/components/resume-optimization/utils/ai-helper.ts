@@ -1,5 +1,6 @@
 
 // A utility function to call generative AI services
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Calls a generative AI service to get an AI-generated response
@@ -9,10 +10,10 @@
  */
 export const callGenerativeAI = async (prompt: string): Promise<string | null> => {
   try {
-    // Check if we have access to Supabase functions
-    if (typeof window !== 'undefined' && window.supabaseClient) {
+    // Check if we're in a browser environment
+    if (typeof window !== 'undefined') {
       // Use Supabase Edge Function to generate content
-      const { data, error } = await window.supabaseClient.functions.invoke('generate-ai-content', {
+      const { data, error } = await supabase.functions.invoke('generate-ai-content', {
         body: { prompt }
       });
       

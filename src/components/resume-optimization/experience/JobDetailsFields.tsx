@@ -9,6 +9,7 @@ import { generateJobDescription, generateJobDutySuggestion } from '../utils/desc
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { callGenerativeAI } from '../utils/ai-helper';
+import { useToast } from '@/hooks/use-toast';
 
 interface JobDetailsFieldsProps {
   id: string;
@@ -43,6 +44,7 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
   const [isEnhancingDuty, setIsEnhancingDuty] = useState(false);
   const [showAddDuty, setShowAddDuty] = useState(false);
   const [isEnhancingText, setIsEnhancingText] = useState(false);
+  const { toast } = useToast();
   
   const handleGenerateDutySuggestion = async () => {
     if (!title) return;
@@ -64,6 +66,12 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
       // Fallback to pre-defined suggestions
       const duty = generateJobDutySuggestion(title);
       setSuggestedDuty(duty);
+      
+      toast({
+        title: "Error",
+        description: "Failed to generate AI suggestion. Using fallback content.",
+        variant: "destructive",
+      });
     } finally {
       setIsEnhancingDuty(false);
     }
@@ -84,9 +92,20 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
       
       if (enhancedText) {
         onDescriptionChange(enhancedText);
+      } else {
+        toast({
+          title: "Enhancement Failed",
+          description: "Could not enhance description. Please try again.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error enhancing description:", error);
+      toast({
+        title: "Error",
+        description: "Failed to enhance description. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsEnhancingText(false);
     }
@@ -296,4 +315,3 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
     </div>
   );
 };
-
