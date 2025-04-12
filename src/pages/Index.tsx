@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import InputCard from '@/components/InputCard';
 import ReportView from '@/components/ReportView';
@@ -21,6 +22,7 @@ const Index = () => {
   const [lastJobId, setLastJobId] = useState<string | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [finalProcessedResumeText, setFinalProcessedResumeText] = useState('');
 
   const handleScanClick = () => {
     // Check if we have enough input to analyze
@@ -75,6 +77,10 @@ const Index = () => {
       if (jobDescriptionFile) {
         finalJobText = await extractTextFromFile(jobDescriptionFile);
       }
+      
+      // Save the processed resume text for later use in optimization
+      setFinalProcessedResumeText(finalResumeText);
+      console.log("Index: Setting finalProcessedResumeText, length:", finalResumeText.length);
       
       // Check if resume text has changed from last submission
       if (finalResumeText === lastResumeText && lastResumeId) {
@@ -133,6 +139,14 @@ const Index = () => {
   const canAnalyze = (!!resumeFile || resumeText.trim().length > 0) && 
                      (!!jobDescriptionFile || jobDescriptionText.trim().length > 0);
 
+  // Debug logging for resume text
+  useEffect(() => {
+    console.log("Index component - Current resumeText state:", 
+      resumeText ? `Present (length: ${resumeText.length})` : "Not present");
+    console.log("Index component - Current finalProcessedResumeText:", 
+      finalProcessedResumeText ? `Present (length: ${finalProcessedResumeText.length})` : "Not present");
+  }, [resumeText, finalProcessedResumeText]);
+
   return (
     <div className="container mx-auto py-6 max-w-4xl">
       <InputCard 
@@ -165,8 +179,8 @@ const Index = () => {
           matchScore={matchScore} 
           report={report}
           userRole={selectedRole}
-          resumeText={resumeText}
-          jobDescriptionText={jobDescriptionText}
+          resumeText={finalProcessedResumeText || lastResumeText}
+          jobDescriptionText={finalJobText || lastJobText}
         />
       )}
     </div>

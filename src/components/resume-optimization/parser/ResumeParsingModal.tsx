@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ResumeParsingModalProps {
@@ -29,6 +29,12 @@ const ResumeParsingModal: React.FC<ResumeParsingModalProps> = ({
   const [isParsing, setIsParsing] = useState(false);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
+  
+  // Debug log when component mounts or resumeText changes
+  useEffect(() => {
+    console.log("ResumeParsingModal received resumeText:", 
+      resumeText ? `Present (length: ${resumeText.length})` : "Not present");
+  }, [resumeText]);
 
   // Simulated progress for better UX
   React.useEffect(() => {
@@ -50,7 +56,9 @@ const ResumeParsingModal: React.FC<ResumeParsingModalProps> = ({
   }, [isParsing, progress]);
 
   const handleParseResume = async () => {
-    if (!resumeText.trim()) {
+    console.log("Starting resume parsing with text:", resumeText ? `Present (length: ${resumeText.length})` : "Not present");
+    
+    if (!resumeText || resumeText.trim() === '') {
       toast({
         title: "No resume content",
         description: "Please provide resume text to parse.",

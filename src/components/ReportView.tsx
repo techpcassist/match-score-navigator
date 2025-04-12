@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import React, { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ATSChecksSection } from "./report/ATSChecksSection";
 import { KeywordsSection } from "./report/KeywordsSection";
@@ -18,17 +18,32 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
   const [optimizationMode, setOptimizationMode] = useState(false);
   const [showParsingModal, setShowParsingModal] = useState(false);
   const [parsedResumeData, setParsedResumeData] = useState(null);
+  const [localResumeText, setLocalResumeText] = useState('');
   const { toast } = useToast();
 
-  // For debugging
-  console.log("ReportView rendered with resumeText:", resumeText ? "Present (length: " + resumeText.length + ")" : "Not present");
+  // Use effect to update local state when props change
+  useEffect(() => {
+    if (resumeText && resumeText.trim() !== '') {
+      console.log("ReportView: Updating localResumeText from props, length:", resumeText.length);
+      setLocalResumeText(resumeText);
+    }
+  }, [resumeText]);
 
+  console.log("ReportView rendered with resumeText prop:", resumeText ? `Present (length: ${resumeText.length})` : "Not present");
+  console.log("ReportView localResumeText state:", localResumeText ? `Present (length: ${localResumeText.length})` : "Not present");
+  
   // Handle parse resume action
   const handleParseResume = () => {
-    console.log("handleParseResume called, resumeText:", resumeText ? resumeText.substring(0, 50) + "..." : "null or empty");
+    console.log("handleParseResume called", {
+      resumeTextProp: resumeText ? resumeText.substring(0, 50) + "..." : "null or empty",
+      localResumeText: localResumeText ? localResumeText.substring(0, 50) + "..." : "null or empty"
+    });
+    
+    // Use local state for checking, with fallback to prop
+    const textToUse = localResumeText || resumeText;
     
     // Check if resumeText exists and is not empty
-    if (!resumeText || resumeText.trim() === '') {
+    if (!textToUse || textToUse.trim() === '') {
       toast({
         title: "No resume found",
         description: "Please upload or paste your resume before optimizing.",
@@ -133,7 +148,7 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
         <ResumeParsingModal
           isOpen={showParsingModal}
           onClose={() => setShowParsingModal(false)}
-          resumeText={resumeText}
+          resumeText={localResumeText || resumeText}
           onParseComplete={handleParseComplete}
         />
       )}
