@@ -1,14 +1,15 @@
+
 import React, { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import ATSChecksSection from "./report/ATSChecksSection";
-import KeywordsSection from "./report/KeywordsSection";
-import ScoreDisplay from "./report/ScoreDisplay";
-import SuggestionsSection from "./report/SuggestionsSection";
-import OptimizationPanel from "./resume-optimization/OptimizationPanel";
-import StructureAnalysisSection from "./report/StructureAnalysisSection";
-import AdvancedCriteriaSection from "./report/AdvancedCriteriaSection";
-import PerformanceSection from "./report/PerformanceSection";
+import { ATSChecksSection } from "./report/ATSChecksSection";
+import { KeywordsSection } from "./report/KeywordsSection";
+import { ScoreDisplay } from "./report/ScoreDisplay";
+import { SuggestionsSection } from "./report/SuggestionsSection";
+import { OptimizationPanel } from "./resume-optimization/OptimizationPanel";
+import { StructureAnalysisSection } from "./report/StructureAnalysisSection";
+import { AdvancedCriteriaSection } from "./report/AdvancedCriteriaSection";
+import { PerformanceSection } from "./report/PerformanceSection";
 import { TrophyIcon, ArrowRight, Sparkles } from "lucide-react";
 import ResumeParsingModal from './resume-optimization/parser/ResumeParsingModal';
 import ResumeOptimizationPage from './resume-optimization/parser/ResumeOptimizationPage';

@@ -1,51 +1,17 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { 
-  WorkExperienceEntry, 
-  ProjectEntry, 
-  MissingSection, 
-  Education,
-} from '../types';
-import { 
-  parseResumeForWorkExperience,
-  parseResumeForEducation,
-  identifyMissingSections,
-  extractKeywordSuggestions,
-  extractFormatSuggestions,
-  createSectionSuggestions,
-} from '../utils/resume-parsing';
-
-interface OptimizationContextType {
-  // State
-  currentStep: number;
-  optimizedResume: string;
-  appliedSuggestions: string[];
-  workExperienceEntries: WorkExperienceEntry[];
-  projectEntries: ProjectEntry[];
-  educationEntries: Education[];
-  missingSections: MissingSection[];
-  completedSteps: number[];
-  keywordSuggestions: any[];
-  formatSuggestions: any[];
-  sectionSuggestions: any[];
-  usingAIParsing: boolean;
-  analysisReport: any; // Add the analysisReport property
-  
-  // Actions
-  setCurrentStep: (step: number) => void;
-  setOptimizedResume: (resume: string) => void;
-  setWorkExperienceEntries: (entries: WorkExperienceEntry[]) => void;
-  setEducationEntries: (entries: Education[]) => void;
-  setProjectEntries: (entries: ProjectEntry[]) => void;
-  setCompletedSteps: (steps: number[]) => void;
-  setMissingSections: (sections: MissingSection[]) => void;
-  handleSectionSelection: (selectedSections: string[]) => void;
-  handleWorkExperienceUpdate: (updatedEntries: WorkExperienceEntry[]) => void;
-  handleEducationUpdate: (updatedEntries: Education[]) => void;
-  handleProjectsUpdate: (updatedProjects: ProjectEntry[]) => void;
-  handleSuggestionAction: (id: string, action: 'accept' | 'edit' | 'ignore') => void;
-  addCompletedStep: (step: number) => void;
-}
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { OptimizationContextType, OptimizationProviderProps } from './OptimizationContextTypes';
+import { optimizationReducer, OptimizationState } from './OptimizationReducer';
+import { useOptimizationHandlers } from './OptimizationContextHooks';
+import {
+  initializeWorkExperience,
+  initializeEducation,
+  initializeMissingSections,
+  initializeKeywordSuggestions,
+  initializeFormatSuggestions,
+  initializeSectionSuggestions,
+  checkAIParsing
+} from './optimizationUtils';
 
 const OptimizationContext = createContext<OptimizationContextType | undefined>(undefined);
 
@@ -57,14 +23,6 @@ export const useOptimizationContext = () => {
   return context;
 };
 
-interface OptimizationProviderProps {
-  children: ReactNode;
-  resumeText: string;
-  jobDescriptionText: string;
-  analysisReport: any;
-  onClose: () => void;
-}
-
 export const OptimizationProvider: React.FC<OptimizationProviderProps> = ({ 
   children,
   resumeText,
@@ -72,114 +30,68 @@ export const OptimizationProvider: React.FC<OptimizationProviderProps> = ({
   analysisReport,
   onClose
 }) => {
-  // Main state for the optimization process
-  const [currentStep, setCurrentStep] = useState(1);
-  const [optimizedResume, setOptimizedResume] = useState(resumeText);
-  const [appliedSuggestions, setAppliedSuggestions] = useState<string[]>([]);
-  const [workExperienceEntries, setWorkExperienceEntries] = useState<WorkExperienceEntry[]>([]);
-  const [projectEntries, setProjectEntries] = useState<ProjectEntry[]>([]);
-  const [educationEntries, setEducationEntries] = useState<Education[]>([]);
-  const [missingSections, setMissingSections] = useState<MissingSection[]>([]);
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  
-  // Suggestions state
-  const [keywordSuggestions, setKeywordSuggestions] = useState<any[]>([]);
-  const [formatSuggestions, setFormatSuggestions] = useState<any[]>([]);
-  const [sectionSuggestions, setSectionSuggestions] = useState<any[]>([]);
-  
-  // Flag to indicate if we're using AI parsing
-  const [usingAIParsing, setUsingAIParsing] = useState(false);
+  const initialState: OptimizationState = {
+    currentStep: 1,
+    optimizedResume: resumeText,
+    appliedSuggestions: [],
+    workExperienceEntries: [],
+    projectEntries: [],
+    educationEntries: [],
+    missingSections: [],
+    completedSteps: [],
+    keywordSuggestions: [],
+    formatSuggestions: [],
+    sectionSuggestions: [],
+    usingAIParsing: false,
+    analysisReport
+  };
 
+  const [state, dispatch] = useReducer(optimizationReducer, initialState);
+  
+  // Get all the handler functions
+  const handlers = useOptimizationHandlers(dispatch, state);
+  
   // Initialize data on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     // Check if we have AI-parsed data
-    const hasAIWorkExperience = analysisReport?.parsed_data?.work_experience?.length > 0;
-    const hasAIEducation = analysisReport?.parsed_data?.education?.length > 0;
+    const usingAI = checkAIParsing(analysisReport);
     
-    setUsingAIParsing(hasAIWorkExperience || hasAIEducation);
+    // Parse work experience data
+    const workExperience = initializeWorkExperience(resumeText, analysisReport);
+    dispatch({ type: 'SET_WORK_EXPERIENCE', payload: workExperience });
     
-    // Parse work experience data - pass the analysisReport to use AI parsed data if available
-    const workExperience = parseResumeForWorkExperience(resumeText, analysisReport);
-    setWorkExperienceEntries(workExperience);
-    
-    // Parse education data - pass the analysisReport to use AI parsed data if available
-    const education = parseResumeForEducation(resumeText, analysisReport);
-    setEducationEntries(education);
+    // Parse education data
+    const education = initializeEducation(resumeText, analysisReport);
+    dispatch({ type: 'SET_EDUCATION', payload: education });
     
     // Identify missing sections
-    const missingSectionsList = identifyMissingSections(resumeText, jobDescriptionText, analysisReport);
-    setMissingSections(missingSectionsList);
+    const missingSectionsList = initializeMissingSections(resumeText, jobDescriptionText, analysisReport);
+    dispatch({ type: 'SET_MISSING_SECTIONS', payload: missingSectionsList });
     
     // Initialize suggestions with AI-enhanced data
-    const keywordSugs = extractKeywordSuggestions(analysisReport);
-    setKeywordSuggestions(keywordSugs);
-    
-    const formatSugs = extractFormatSuggestions(analysisReport);
-    setFormatSuggestions(formatSugs);
-    
-    const sectionSugs = createSectionSuggestions(missingSectionsList);
-    setSectionSuggestions(sectionSugs);
+    const keywordSugs = initializeKeywordSuggestions(analysisReport);
+    const formatSugs = initializeFormatSuggestions(analysisReport);
+    const sectionSugs = initializeSectionSuggestions(missingSectionsList);
     
     // Mark first step as viewed
-    if (!completedSteps.includes(1)) {
-      setCompletedSteps(prev => [...prev, 1]);
+    if (!state.completedSteps.includes(1)) {
+      dispatch({ type: 'ADD_COMPLETED_STEP', payload: 1 });
     }
   }, [resumeText, jobDescriptionText, analysisReport]);
 
-  // Add a step to completed steps if not already there
-  const addCompletedStep = (step: number) => {
-    if (!completedSteps.includes(step)) {
-      setCompletedSteps(prev => [...prev, step]);
-    }
-  };
+  // Create setter functions that dispatch actions
+  const setCurrentStep = (step: number) => dispatch({ type: 'SET_CURRENT_STEP', payload: step });
+  const setOptimizedResume = (resume: string) => dispatch({ type: 'SET_OPTIMIZED_RESUME', payload: resume });
+  const setWorkExperienceEntries = (entries: any[]) => dispatch({ type: 'SET_WORK_EXPERIENCE', payload: entries });
+  const setEducationEntries = (entries: any[]) => dispatch({ type: 'SET_EDUCATION', payload: entries });
+  const setProjectEntries = (entries: any[]) => dispatch({ type: 'SET_PROJECTS', payload: entries });
+  const setCompletedSteps = (steps: number[]) => dispatch({ type: 'SET_COMPLETED_STEPS', payload: steps });
+  const setMissingSections = (sections: any[]) => dispatch({ type: 'SET_MISSING_SECTIONS', payload: sections });
 
-  const handleSectionSelection = (selectedSections: string[]) => {
-    // Update the missingSections state based on user selection
-    setMissingSections(prev => 
-      prev.filter(section => selectedSections.includes(section.id))
-    );
+  const value: OptimizationContextType = {
+    ...state,
     
-    // Update section suggestions based on new missing sections
-    setSectionSuggestions(
-      createSectionSuggestions(
-        missingSections.filter(section => selectedSections.includes(section.id))
-      )
-    );
-  };
-  
-  const handleWorkExperienceUpdate = (updatedEntries: WorkExperienceEntry[]) => {
-    setWorkExperienceEntries(updatedEntries);
-  };
-  
-  const handleEducationUpdate = (updatedEntries: Education[]) => {
-    setEducationEntries(updatedEntries);
-  };
-  
-  const handleProjectsUpdate = (updatedProjects: ProjectEntry[]) => {
-    setProjectEntries(updatedProjects);
-  };
-  
-  const handleSuggestionAction = (id: string, action: 'accept' | 'edit' | 'ignore') => {
-    if (action === 'accept' || action === 'edit') {
-      setAppliedSuggestions(prev => [...prev, id]);
-    }
-  };
-
-  const value = {
-    currentStep,
-    optimizedResume,
-    appliedSuggestions,
-    workExperienceEntries,
-    projectEntries,
-    educationEntries,
-    missingSections,
-    completedSteps,
-    keywordSuggestions,
-    formatSuggestions,
-    sectionSuggestions,
-    usingAIParsing,
-    analysisReport, // Add the analysisReport to the context value
-    
+    // Simple setters
     setCurrentStep,
     setOptimizedResume,
     setWorkExperienceEntries,
@@ -187,12 +99,9 @@ export const OptimizationProvider: React.FC<OptimizationProviderProps> = ({
     setProjectEntries,
     setCompletedSteps,
     setMissingSections,
-    handleSectionSelection,
-    handleWorkExperienceUpdate,
-    handleEducationUpdate,
-    handleProjectsUpdate,
-    handleSuggestionAction,
-    addCompletedStep
+    
+    // Complex handlers
+    ...handlers
   };
 
   return (

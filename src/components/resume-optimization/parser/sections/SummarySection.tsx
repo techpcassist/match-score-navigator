@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,6 +12,24 @@ interface SummarySectionProps {
 }
 
 const SummarySection: React.FC<SummarySectionProps> = ({ summary, onChange }) => {
+  const [characterCount, setCharacterCount] = useState(0);
+  
+  useEffect(() => {
+    setCharacterCount(summary?.length || 0);
+  }, [summary]);
+  
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange(e.target.value);
+    setCharacterCount(e.target.value.length);
+  };
+  
+  // Calculate character count color
+  const getCountColor = () => {
+    if (characterCount > 1000) return "text-red-500";
+    if (characterCount > 750) return "text-yellow-500";
+    return "text-gray-500";
+  };
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -25,12 +43,17 @@ const SummarySection: React.FC<SummarySectionProps> = ({ summary, onChange }) =>
           </Alert>
           
           <div className="space-y-2">
-            <Label htmlFor="summary">Professional Summary</Label>
+            <div className="flex justify-between">
+              <Label htmlFor="summary">Professional Summary</Label>
+              <span className={`text-xs ${getCountColor()}`}>
+                {characterCount} / 800 characters recommended
+              </span>
+            </div>
             <Textarea
               id="summary"
               placeholder="Provide a concise overview of your professional background, key skills, and career highlights..."
               value={summary || ''}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={handleChange}
               className="min-h-[200px]"
             />
           </div>
