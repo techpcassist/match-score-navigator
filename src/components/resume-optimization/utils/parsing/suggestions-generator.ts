@@ -1,6 +1,21 @@
 
 import { KeywordSuggestion, FormattingSuggestion, SectionSuggestion, MissingSection, MissingInfo, WorkExperienceEntry } from '../../types';
 
+// Function to be used by resume-parser.ts
+export const generateSuggestions = (resumeText: string, parsedData: any) => {
+  const keywordSuggestions = extractKeywordSuggestions(parsedData.analysisReport || {});
+  const formatSuggestions = extractFormatSuggestions(parsedData.analysisReport || {});
+  const sectionSuggestions = createSectionSuggestions(parsedData.missingSections || []);
+  const missingInfo = generateMissingInfo(parsedData.experiences || [], parsedData.analysisReport || {}, resumeText);
+  
+  return {
+    keywords: keywordSuggestions,
+    formatting: formatSuggestions,
+    sections: sectionSuggestions,
+    missingInfo: missingInfo
+  };
+};
+
 // Helper function to extract keyword suggestions from the analysis report
 export const extractKeywordSuggestions = (analysisReport: any): KeywordSuggestion[] => {
   if (!analysisReport || !analysisReport.keywords) return [];

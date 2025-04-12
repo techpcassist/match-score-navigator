@@ -1,6 +1,11 @@
 
 import { Education } from '../../types';
 
+// Function to be used by resume-parser.ts
+export const parseEducation = (resumeText: string, sectionText?: string) => {
+  return parseResumeForEducation(resumeText);
+};
+
 // Parse the resume text to extract education entries
 export const parseResumeForEducation = (resumeText: string, analysisReport?: any): Education[] => {
   // If we have AI-parsed data from the analysis report, use it first

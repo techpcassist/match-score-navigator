@@ -1,6 +1,16 @@
 
 import { MissingSection } from '../../types';
 
+// Function to be used by resume-parser.ts
+export const parseSections = (resumeText: string) => {
+  // This is a simplified implementation that just returns an object with empty fields
+  // In a real implementation, this would parse the text to find sections
+  return {
+    workExperience: '',
+    education: ''
+  };
+};
+
 // Identify missing sections based on the resume and job description
 export const identifyMissingSections = (resumeText: string, jobDescriptionText: string, analysisReport: any): MissingSection[] => {
   const missingList: MissingSection[] = [];
