@@ -1,103 +1,21 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, FileText, Edit, Download, Trash2 } from 'lucide-react';
+import { PlusCircle, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-
-interface Resume {
-  id: string;
-  title: string;
-  lastModified: Date;
-  content: string;
-  sections?: any[];
-}
+import { ResumeCard } from '@/components/resume-dashboard/ResumeCard';
+import { NewResumeDialog } from '@/components/resume-dashboard/NewResumeDialog';
+import { useResumes } from '@/hooks/use-resumes';
 
 const ResumeDashboard = () => {
-  const [resumes, setResumes] = useState<Resume[]>([]);
   const [showNewResumeDialog, setShowNewResumeDialog] = useState(false);
-  const [newResumeTitle, setNewResumeTitle] = useState('');
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { resumes, loading, createResume, deleteResume } = useResumes();
 
-  useEffect(() => {
-    // Load resumes from localStorage
-    const loadResumes = () => {
-      console.log("Loading resumes in dashboard");
-      const savedResumes = localStorage.getItem('resumes');
-      if (savedResumes) {
-        try {
-          const parsedResumes = JSON.parse(savedResumes);
-          console.log("Parsed resumes:", parsedResumes);
-          // Convert string dates back to Date objects
-          const formattedResumes = parsedResumes.map((resume: any) => ({
-            ...resume,
-            lastModified: new Date(resume.lastModified)
-          }));
-          setResumes(formattedResumes);
-        } catch (error) {
-          console.error('Error parsing resumes from localStorage:', error);
-          setResumes([]);
-        }
-      } else {
-        console.log("No resumes found in localStorage");
-      }
-    };
-
-    loadResumes();
-    
-    // Check if we have a newly optimized resume from the analyze feature
-    const pendingOptimizedResume = localStorage.getItem('pendingOptimizedResume');
-    if (pendingOptimizedResume) {
-      try {
-        console.log("Found pending optimized resume");
-        const optimizedResume = JSON.parse(pendingOptimizedResume);
-        
-        // Create a new resume from the optimized content
-        const newResume = {
-          id: `resume-${Date.now()}`,
-          title: optimizedResume.title || 'Optimized Resume',
-          lastModified: new Date(),
-          content: optimizedResume.content,
-          sections: optimizedResume.sections || []
-        };
-        
-        console.log("Creating new resume from optimized content:", newResume);
-        
-        // Add to resumes list
-        const updatedResumes = [...resumes, newResume];
-        setResumes(updatedResumes);
-        
-        // Save to localStorage
-        localStorage.setItem('resumes', JSON.stringify(updatedResumes));
-        
-        // Clear the pending optimized resume
-        localStorage.removeItem('pendingOptimizedResume');
-        
-        // Show success toast
-        toast({
-          title: "Resume added",
-          description: "Your optimized resume has been added to your dashboard.",
-        });
-      } catch (error) {
-        console.error('Error processing optimized resume:', error);
-      }
-    }
-  }, [toast, resumes.length]);
-
-  const handleCreateResume = () => {
-    if (!newResumeTitle.trim()) {
+  const handleCreateResume = (title: string) => {
+    if (!title.trim()) {
       toast({
         title: "Resume title required",
         description: "Please enter a title for your resume",
@@ -106,44 +24,11 @@ const ResumeDashboard = () => {
       return;
     }
 
-    const newResume: Resume = {
-      id: `resume-${Date.now()}`,
-      title: newResumeTitle,
-      lastModified: new Date(),
-      content: '', // Empty content for a new resume
-      sections: [
-        {
-          id: `section-${Date.now()}-0`,
-          title: "Summary",
-          content: "",
-          type: "summary"
-        }
-      ]
-    };
-
-    console.log("Creating new resume:", newResume);
-    const updatedResumes = [...resumes, newResume];
-    setResumes(updatedResumes);
-    
-    // Save to localStorage
-    localStorage.setItem('resumes', JSON.stringify(updatedResumes));
-    
+    const newResume = createResume(title);
     setShowNewResumeDialog(false);
-    setNewResumeTitle('');
     
     // Navigate to the editor
     navigate(`/resumes/edit/${newResume.id}`);
-  };
-
-  const handleDeleteResume = (id: string) => {
-    const updatedResumes = resumes.filter(resume => resume.id !== id);
-    setResumes(updatedResumes);
-    localStorage.setItem('resumes', JSON.stringify(updatedResumes));
-    
-    toast({
-      title: "Resume deleted",
-      description: "The resume has been removed from your dashboard.",
-    });
   };
 
   const formatDate = (date: Date) => {
@@ -166,7 +51,12 @@ const ResumeDashboard = () => {
         </Button>
       </div>
 
-      {resumes.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="h-8 w-8 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your resumes...</p>
+        </div>
+      ) : resumes.length === 0 ? (
         <div className="text-center py-12 border rounded-lg bg-muted/30">
           <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-xl font-medium mb-2">No resumes yet</h3>
@@ -179,63 +69,21 @@ const ResumeDashboard = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {resumes.map(resume => (
-            <Card key={resume.id} className="overflow-hidden">
-              <CardHeader className="pb-2">
-                <CardTitle className="truncate">{resume.title}</CardTitle>
-                <CardDescription>
-                  Last modified: {formatDate(resume.lastModified)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pb-0">
-                <div className="h-24 overflow-hidden text-ellipsis text-sm text-muted-foreground bg-muted/20 p-3 rounded border">
-                  {resume.content ? resume.content.substring(0, 200) + '...' : 'Empty resume'}
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between pt-4">
-                <Button variant="outline" size="sm" onClick={() => handleDeleteResume(resume.id)}>
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete
-                </Button>
-                <Link to={`/resumes/edit/${resume.id}`}>
-                  <Button size="sm">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
+            <ResumeCard 
+              key={resume.id} 
+              resume={resume} 
+              onDelete={deleteResume} 
+              formatDate={formatDate}
+            />
           ))}
         </div>
       )}
 
-      <Dialog open={showNewResumeDialog} onOpenChange={setShowNewResumeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Resume</DialogTitle>
-            <DialogDescription>
-              Give your resume a title to help you identify it later.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="resumeTitle">Resume Title</Label>
-            <Input
-              id="resumeTitle"
-              value={newResumeTitle}
-              onChange={(e) => setNewResumeTitle(e.target.value)}
-              placeholder="e.g., Software Developer Resume"
-              className="mt-2"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewResumeDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateResume}>
-              Create Resume
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NewResumeDialog
+        open={showNewResumeDialog}
+        onOpenChange={setShowNewResumeDialog}
+        onCreateResume={handleCreateResume}
+      />
     </div>
   );
 };
