@@ -13,6 +13,8 @@ import {
 
 interface OptimizationStepContentProps {
   currentStep: number;
+  resumeText: string;
+  jobDescriptionText: string;
   missingSections: MissingSection[];
   workExperienceEntries: WorkExperienceEntry[];
   educationEntries: Education[];
@@ -34,6 +36,8 @@ export const OptimizationStepContent: React.FC<OptimizationStepContentProps> = (
   return (
     <StepViewer 
       currentStep={props.currentStep}
+      resumeText={props.resumeText}
+      jobDescriptionText={props.jobDescriptionText}
       missingSections={props.missingSections}
       workExperienceEntries={props.workExperienceEntries}
       educationEntries={props.educationEntries}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -175,6 +174,8 @@ export const OptimizationPanel = ({
       
       <OptimizationStepContent 
         currentStep={currentStep}
+        resumeText={resumeText}
+        jobDescriptionText={jobDescriptionText}
         missingSections={missingSections}
         workExperienceEntries={workExperienceEntries}
         educationEntries={educationEntries}

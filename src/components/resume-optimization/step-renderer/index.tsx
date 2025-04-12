@@ -17,6 +17,8 @@ import {
 } from '../types';
 
 export interface StepProps {
+  resumeText: string;
+  jobDescriptionText: string;
   missingSections: MissingSection[];
   workExperienceEntries: WorkExperienceEntry[];
   educationEntries: Education[];
@@ -61,9 +63,9 @@ export const renderStep = (currentStep: number, props: StepProps): React.ReactNo
       return (
         <Step4Projects 
           projects={props.projectEntries}
-          jobKeywords={props.analysisReport.keywords?.hard_skills
-            .filter((skill: any) => skill.matched)
-            .map((skill: any) => skill.term) || []}
+          jobKeywords={props.analysisReport?.keywords?.hard_skills
+            ?.filter((skill: any) => skill.matched)
+            ?.map((skill: any) => skill.term) || []}
           onChange={props.onProjectsUpdate}
         />
       );
