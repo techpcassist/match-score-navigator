@@ -84,6 +84,9 @@ const ResumeEditor = () => {
   // Used for autosave
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Effect to create a default section if no sections exist after loading completes
+  const [hasInitialized, setHasInitialized] = useState(false);
+
   useEffect(() => {
     // Load resume data
     if (id) {
@@ -132,13 +135,31 @@ const ResumeEditor = () => {
           });
         } finally {
           setLoading(false);
+          setHasInitialized(true);
         }
       } else {
         console.error("No resumes found in localStorage");
         setLoading(false);
+        setHasInitialized(true);
       }
     }
   }, [id, navigate, toast]);
+
+  // Separated the section initialization into its own effect with proper dependencies
+  useEffect(() => {
+    // Only run this effect after the initial loading is complete
+    if (!loading && hasInitialized && sections.length === 0) {
+      console.log("No sections available after loading, creating default section");
+      const defaultSection = {
+        id: `section-${Date.now()}-0`,
+        title: "Summary",
+        content: "",
+        type: "summary"
+      };
+      setSections([defaultSection]);
+      setCurrentSection(defaultSection.id);
+    }
+  }, [loading, hasInitialized, sections.length]);
 
   // Parse resume content into sections
   const parseContentIntoSections = (content: string): ResumeSection[] => {
@@ -389,21 +410,6 @@ const ResumeEditor = () => {
       </div>
     );
   }
-
-  // If no sections are available after loading, create a default one
-  useEffect(() => {
-    if (!loading && sections.length === 0) {
-      console.log("No sections available after loading, creating default section");
-      const defaultSection = {
-        id: `section-${Date.now()}-0`,
-        title: "Summary",
-        content: "",
-        type: "summary"
-      };
-      setSections([defaultSection]);
-      setCurrentSection(defaultSection.id);
-    }
-  }, [loading, sections]);
 
   return (
     <div className="container mx-auto py-4">
