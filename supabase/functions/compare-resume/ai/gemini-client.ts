@@ -115,6 +115,27 @@ function createAnalysisPrompt(resumeText: string, jobText: string, userRole?: st
     `;
   }
   
+  // Add detailed structured parsing instructions
+  prompt += `
+  ADDITIONAL TASK: STRUCTURED RESUME PARSING
+  In addition to the analysis, extract structured data from the resume:
+  1. Work Experience: For each position, identify:
+     - Company name
+     - Job title
+     - Start and end dates (or "Present" if current)
+     - Location information (country, state/province, city if available)
+     - Description/responsibilities
+  
+  2. Education: For each entry, identify:
+     - Degree/certificate name
+     - Field of study
+     - University/institution name
+     - Location
+     - Start and end dates
+  
+  Include this structured data in your response JSON.
+  `;
+  
   // Add the required JSON structure for output
   prompt += `
   Respond with a JSON object containing the following structure:
@@ -160,6 +181,37 @@ function createAnalysisPrompt(resumeText: string, jobText: string, userRole?: st
         "level": "high"|"medium"|"low",
         "issues": ["issue 1", "issue 2", ...]
       }
+    },
+    "parsed_data": {
+      "work_experience": [
+        {
+          "id": "string",
+          "company": "string",
+          "title": "string",
+          "startDate": "string",
+          "endDate": "string",
+          "companyLocation": {
+            "country": "string",
+            "state": "string",
+            "city": "string"
+          },
+          "description": "string"
+        },
+        ...
+      ],
+      "education": [
+        {
+          "id": "string",
+          "degree": "string",
+          "fieldOfStudy": "string",
+          "university": "string",
+          "country": "string",
+          "state": "string",
+          "startDate": "string",
+          "endDate": "string"
+        },
+        ...
+      ]
     }
   }
   

@@ -35,10 +35,39 @@ export const compareResumeToJob = async (
     if (aiResponse.success) {
       console.log("Successfully got analysis from Google Generative AI");
       
-      // The aiResponse.data should already contain our entire analysis structure
+      // Extract work experience and education from AI-parsed data
+      const parsedWorkExperience = aiResponse.data.parsed_data?.work_experience || [];
+      const parsedEducation = aiResponse.data.parsed_data?.education || [];
+      
+      // Add IDs to entries if they don't have them
+      const workExperienceWithIds = parsedWorkExperience.map((entry: any, index: number) => ({
+        ...entry,
+        id: entry.id || `job-${index}`,
+        teamSize: 0,
+        teamName: '',
+        projectName: ''
+      }));
+      
+      const educationWithIds = parsedEducation.map((entry: any, index: number) => ({
+        ...entry,
+        id: entry.id || `edu-${index}`,
+        customUniversity: false
+      }));
+      
+      console.log(`AI parsed ${workExperienceWithIds.length} work experience entries and ${educationWithIds.length} education entries`);
+      
+      // Add the parsed data to the analysis result
+      const enhancedData = {
+        ...aiResponse.data,
+        parsed_data: {
+          work_experience: workExperienceWithIds,
+          education: educationWithIds
+        }
+      };
+      
       return { 
         match_score: aiResponse.data.match_score, 
-        analysis: aiResponse.data
+        analysis: enhancedData
       };
     } else {
       console.log("Google Generative AI call failed, falling back to basic analysis");
