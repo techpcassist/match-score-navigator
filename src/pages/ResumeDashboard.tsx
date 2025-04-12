@@ -34,10 +34,12 @@ const ResumeDashboard = () => {
   useEffect(() => {
     // Load resumes from localStorage
     const loadResumes = () => {
+      console.log("Loading resumes in dashboard");
       const savedResumes = localStorage.getItem('resumes');
       if (savedResumes) {
         try {
           const parsedResumes = JSON.parse(savedResumes);
+          console.log("Parsed resumes:", parsedResumes);
           // Convert string dates back to Date objects
           const formattedResumes = parsedResumes.map((resume: any) => ({
             ...resume,
@@ -48,6 +50,8 @@ const ResumeDashboard = () => {
           console.error('Error parsing resumes from localStorage:', error);
           setResumes([]);
         }
+      } else {
+        console.log("No resumes found in localStorage");
       }
     };
 
@@ -57,14 +61,19 @@ const ResumeDashboard = () => {
     const pendingOptimizedResume = localStorage.getItem('pendingOptimizedResume');
     if (pendingOptimizedResume) {
       try {
+        console.log("Found pending optimized resume");
         const optimizedResume = JSON.parse(pendingOptimizedResume);
+        
         // Create a new resume from the optimized content
         const newResume = {
           id: `resume-${Date.now()}`,
           title: optimizedResume.title || 'Optimized Resume',
           lastModified: new Date(),
-          content: optimizedResume.content
+          content: optimizedResume.content,
+          sections: optimizedResume.sections || []
         };
+        
+        console.log("Creating new resume from optimized content:", newResume);
         
         // Add to resumes list
         const updatedResumes = [...resumes, newResume];
@@ -112,6 +121,7 @@ const ResumeDashboard = () => {
       ]
     };
 
+    console.log("Creating new resume:", newResume);
     const updatedResumes = [...resumes, newResume];
     setResumes(updatedResumes);
     

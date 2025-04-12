@@ -74,6 +74,7 @@ const ResumeEditor = () => {
   const [sections, setSections] = useState<ResumeSection[]>([]);
   const [currentSection, setCurrentSection] = useState<string | null>(null);
   const [rawContent, setRawContent] = useState('');
+  const [loading, setLoading] = useState(true);
   
   // UI state
   const [showAddSectionDialog, setShowAddSectionDialog] = useState(false);
@@ -86,27 +87,35 @@ const ResumeEditor = () => {
   useEffect(() => {
     // Load resume data
     if (id) {
+      setLoading(true);
       const savedResumes = localStorage.getItem('resumes');
       if (savedResumes) {
         try {
+          console.log("Loading resumes from localStorage");
           const resumes = JSON.parse(savedResumes);
+          console.log("Found resumes:", resumes);
           const resume = resumes.find((r: any) => r.id === id);
           
           if (resume) {
-            setResumeTitle(resume.title);
+            console.log("Found resume with ID:", id, resume);
+            setResumeTitle(resume.title || 'Untitled Resume');
             
             // If resume has sections already, use them
-            if (resume.sections && Array.isArray(resume.sections)) {
+            if (resume.sections && Array.isArray(resume.sections) && resume.sections.length > 0) {
+              console.log("Using existing sections:", resume.sections);
               setSections(resume.sections);
               setCurrentSection(resume.sections[0]?.id || null);
             } else {
               // Otherwise, parse the content into sections
+              console.log("Parsing content into sections:", resume.content);
               setRawContent(resume.content || '');
               const parsedSections = parseContentIntoSections(resume.content || '');
+              console.log("Parsed sections:", parsedSections);
               setSections(parsedSections);
               setCurrentSection(parsedSections[0]?.id || null);
             }
           } else {
+            console.error("Resume not found with ID:", id);
             toast({
               title: "Resume not found",
               description: "The requested resume could not be loaded.",
@@ -121,14 +130,27 @@ const ResumeEditor = () => {
             description: "There was a problem loading your resume.",
             variant: "destructive"
           });
+        } finally {
+          setLoading(false);
         }
+      } else {
+        console.error("No resumes found in localStorage");
+        setLoading(false);
       }
     }
   }, [id, navigate, toast]);
 
   // Parse resume content into sections
   const parseContentIntoSections = (content: string): ResumeSection[] => {
-    if (!content) return [];
+    if (!content || typeof content !== 'string') {
+      console.log("Creating default section due to empty content");
+      return [{
+        id: `section-${Date.now()}-0`,
+        title: "Summary",
+        content: "",
+        type: "summary"
+      }];
+    }
     
     const lines = content.split('\n');
     const parsedSections: ResumeSection[] = [];
@@ -187,6 +209,7 @@ const ResumeEditor = () => {
     
     // If no sections were created, create a default summary section
     if (parsedSections.length === 0) {
+      console.log("Creating default section as no sections were parsed");
       parsedSections.push({
         id: `section-${Date.now()}-0`,
         title: "Summary",
@@ -355,6 +378,33 @@ const ResumeEditor = () => {
     });
   };
 
+  // If we're loading, show a loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto py-4 flex items-center justify-center h-[calc(100vh-100px)]">
+        <div className="text-center">
+          <div className="h-8 w-8 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading resume...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no sections are available after loading, create a default one
+  useEffect(() => {
+    if (!loading && sections.length === 0) {
+      console.log("No sections available after loading, creating default section");
+      const defaultSection = {
+        id: `section-${Date.now()}-0`,
+        title: "Summary",
+        content: "",
+        type: "summary"
+      };
+      setSections([defaultSection]);
+      setCurrentSection(defaultSection.id);
+    }
+  }, [loading, sections]);
+
   return (
     <div className="container mx-auto py-4">
       <div className="flex justify-between items-center mb-4">
@@ -423,115 +473,127 @@ const ResumeEditor = () => {
             </Button>
           </div>
           
-          <div className="flex flex-col gap-4 bg-card p-4 rounded-lg border h-[calc(100vh-180px)] overflow-hidden">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowAddSectionDialog(true)}
-              >
-                <PlusCircle className="h-4 w-4 mr-1" />
-                Add Section
-              </Button>
-              
-              <div className="flex-1 overflow-x-auto">
-                <Tabs 
-                  value={currentSection || ''} 
-                  onValueChange={setCurrentSection}
-                  className="w-full"
-                >
-                  <TabsList className="inline-flex h-9 w-auto">
-                    {sections.map(section => (
-                      <TabsTrigger 
-                        key={section.id} 
-                        value={section.id}
-                        className="h-8 px-3"
-                      >
-                        {section.title}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
+          {sections.length === 0 ? (
+            <div className="bg-card p-8 rounded-lg border h-[calc(100vh-180px)] flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-muted-foreground mb-4">No resume sections found. Create your first section to get started.</p>
+                <Button onClick={() => setShowAddSectionDialog(true)}>
+                  <PlusCircle className="h-4 w-4 mr-1" />
+                  Add Section
+                </Button>
               </div>
             </div>
-            
-            <div className="flex-1 overflow-y-auto">
-              {sections.map(section => (
-                <TabsContent 
-                  key={section.id} 
-                  value={section.id}
-                  className="h-full m-0"
+          ) : (
+            <div className="flex flex-col gap-4 bg-card p-4 rounded-lg border h-[calc(100vh-180px)] overflow-hidden">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowAddSectionDialog(true)}
                 >
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={section.title}
-                        onChange={(e) => handleSectionUpdate({ ...section, title: e.target.value })}
-                        className="w-48 h-8"
-                        placeholder="Section Title"
-                      />
-                      <Select 
-                        value={section.type}
-                        onValueChange={(value) => handleSectionUpdate({ ...section, type: value })}
-                      >
-                        <SelectTrigger className="w-36 h-8">
-                          <SelectValue placeholder="Section Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {sectionTypes.map(type => (
-                            <SelectItem key={type} value={type}>
-                              {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <PlusCircle className="h-4 w-4 mr-1" />
+                  Add Section
+                </Button>
+                
+                <div className="flex-1 overflow-x-auto">
+                  <Tabs 
+                    value={currentSection || ''} 
+                    onValueChange={setCurrentSection}
+                    className="w-full"
+                  >
+                    <TabsList className="inline-flex h-9 w-auto">
+                      {sections.map(section => (
+                        <TabsTrigger 
+                          key={section.id} 
+                          value={section.id}
+                          className="h-8 px-3"
+                        >
+                          {section.title}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                {sections.map(section => (
+                  <TabsContent 
+                    key={section.id} 
+                    value={section.id}
+                    className="h-full m-0"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={section.title}
+                          onChange={(e) => handleSectionUpdate({ ...section, title: e.target.value })}
+                          className="w-48 h-8"
+                          placeholder="Section Title"
+                        />
+                        <Select 
+                          value={section.type}
+                          onValueChange={(value) => handleSectionUpdate({ ...section, type: value })}
+                        >
+                          <SelectTrigger className="w-36 h-8">
+                            <SelectValue placeholder="Section Type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sectionTypes.map(type => (
+                              <SelectItem key={type} value={type}>
+                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleMoveSection(section.id, 'up')}
+                          disabled={sections.indexOf(section) === 0}
+                        >
+                          <MoveUp className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleMoveSection(section.id, 'down')}
+                          disabled={sections.indexOf(section) === sections.length - 1}
+                        >
+                          <MoveDown className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => handleDeleteSection(section.id)}
+                          disabled={sections.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleMoveSection(section.id, 'up')}
-                        disabled={sections.indexOf(section) === 0}
-                      >
-                        <MoveUp className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleMoveSection(section.id, 'down')}
-                        disabled={sections.indexOf(section) === sections.length - 1}
-                      >
-                        <MoveDown className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => handleDeleteSection(section.id)}
-                        disabled={sections.length <= 1}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <SectionEditor
-                    section={section}
-                    onUpdate={handleSectionUpdate}
-                  />
-                  
-                  <AIAssistant
-                    sectionType={section.type}
-                    sectionId={section.id}
-                    existingContent={section.content}
-                    onSuggestionApply={handleAISuggestion}
-                  />
-                </TabsContent>
-              ))}
+                    
+                    <SectionEditor
+                      section={section}
+                      onUpdate={handleSectionUpdate}
+                    />
+                    
+                    <AIAssistant
+                      sectionType={section.type}
+                      sectionId={section.id}
+                      existingContent={section.content}
+                      onSuggestionApply={handleAISuggestion}
+                    />
+                  </TabsContent>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
         
         {showPreview && (
