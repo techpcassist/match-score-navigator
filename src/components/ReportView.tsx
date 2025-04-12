@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -82,10 +81,14 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
     // Create a full resume content from the optimized data
     const resumeContent = buildResumeContentFromData(updatedData);
     
+    // Create proper resume sections
+    const sections = createSectionsFromOptimizedData(updatedData);
+    
     // Store the optimized resume in localStorage to be picked up by the ResumeDashboard
     const optimizedResumeData = {
       title: `Optimized Resume (${new Date().toLocaleDateString()})`,
       content: resumeContent,
+      sections: sections,
       timestamp: Date.now()
     };
     
@@ -98,6 +101,120 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
     
     // Navigate to the resume dashboard
     navigate('/resumes');
+  };
+  
+  // Create proper resume sections from optimized data
+  const createSectionsFromOptimizedData = (data) => {
+    const timestamp = Date.now();
+    const sections = [];
+    
+    // Add contact information section if available
+    if (data.contact_details) {
+      let contactContent = '';
+      if (data.contact_details.name) contactContent += `${data.contact_details.name}\n`;
+      if (data.contact_details.email) contactContent += `${data.contact_details.email}\n`;
+      if (data.contact_details.phone) contactContent += `${data.contact_details.phone}\n`;
+      if (data.contact_details.location) contactContent += `${data.contact_details.location}\n`;
+      if (data.contact_details.linkedin) contactContent += `${data.contact_details.linkedin}\n`;
+      
+      sections.push({
+        id: `section-${timestamp}-${sections.length}`,
+        title: "Contact Information",
+        content: contactContent.trim(),
+        type: "contact"
+      });
+    }
+    
+    // Add summary section if available
+    if (data.summary) {
+      sections.push({
+        id: `section-${timestamp}-${sections.length}`,
+        title: "Professional Summary",
+        content: data.summary.trim(),
+        type: "summary"
+      });
+    }
+    
+    // Add experiences section if available
+    if (data.experiences && data.experiences.length > 0) {
+      let experienceContent = '';
+      
+      data.experiences.forEach(exp => {
+        let jobHeader = '';
+        if (exp.title) jobHeader += `${exp.title}`;
+        if (exp.company) jobHeader += ` | ${exp.company}`;
+        if (exp.startDate || exp.endDate) {
+          jobHeader += ` | `;
+          if (exp.startDate) jobHeader += `${exp.startDate}`;
+          jobHeader += ` - `;
+          if (exp.endDate) jobHeader += `${exp.endDate}`;
+        }
+        experienceContent += `${jobHeader}\n`;
+        
+        if (exp.description) {
+          // Format bullet points
+          const descLines = exp.description.split('\n');
+          descLines.forEach(line => {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('•')) {
+              experienceContent += `${trimmedLine}\n`;
+            } else if (trimmedLine) {
+              experienceContent += `• ${trimmedLine}\n`;
+            }
+          });
+        }
+        
+        experienceContent += '\n';
+      });
+      
+      sections.push({
+        id: `section-${timestamp}-${sections.length}`,
+        title: "Work Experience",
+        content: experienceContent.trim(),
+        type: "experience"
+      });
+    }
+    
+    // Add education section if available
+    if (data.education && data.education.length > 0) {
+      let educationContent = '';
+      
+      data.education.forEach(edu => {
+        if (edu.degree) educationContent += `${edu.degree}`;
+        if (edu.fieldOfStudy) educationContent += ` in ${edu.fieldOfStudy}`;
+        educationContent += `\n`;
+        
+        if (edu.university) educationContent += `${edu.university}`;
+        if (edu.startDate || edu.endDate) {
+          educationContent += ` | `;
+          if (edu.startDate) educationContent += `${edu.startDate}`;
+          educationContent += ` - `;
+          if (edu.endDate) educationContent += `${edu.endDate}`;
+        }
+        educationContent += `\n\n`;
+      });
+      
+      sections.push({
+        id: `section-${timestamp}-${sections.length}`,
+        title: "Education",
+        content: educationContent.trim(),
+        type: "education"
+      });
+    }
+    
+    // Add skills section if available
+    if (data.skills && data.skills.length > 0) {
+      const skillsContent = data.skills.join(', ');
+      
+      sections.push({
+        id: `section-${timestamp}-${sections.length}`,
+        title: "Skills",
+        content: skillsContent,
+        type: "skills"
+      });
+    }
+    
+    return sections;
   };
   
   // Save current resume directly to editor
@@ -281,6 +398,11 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
         }
         content += `\n\n`;
       });
+    }
+    
+    // Add skills if available
+    if (data.skills && data.skills.length > 0) {
+      content += `Skills\n\n${data.skills.join(', ')}\n\n`;
     }
     
     return content;

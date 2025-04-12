@@ -1,8 +1,8 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle } from 'lucide-react';
-import { TabsContent } from '@/components/ui/tabs';
 import { useResumeEditor } from '@/hooks/use-resume-editor';
 import { SectionTabs } from '@/components/resume-editor/SectionTabs';
 import { EditorHeader } from '@/components/resume-editor/EditorHeader';
@@ -15,6 +15,7 @@ import { EditorEmptyState } from '@/components/resume-editor/EditorEmptyState';
 import { EditorLoading } from '@/components/resume-editor/EditorLoading';
 import { EditorMainContent } from '@/components/resume-editor/EditorMainContent';
 import { EditorPreviewToggle } from '@/components/resume-editor/EditorPreviewToggle';
+import { useNavigate } from 'react-router-dom';
 
 // Define standard section types
 const sectionTypes = [
@@ -33,6 +34,8 @@ const sectionTypes = [
 ];
 
 const ResumeEditor = () => {
+  const navigate = useNavigate();
+  
   const {
     resumeTitle,
     setResumeTitle,
@@ -40,6 +43,7 @@ const ResumeEditor = () => {
     currentSection,
     setCurrentSection,
     loading,
+    error,
     showAddSectionDialog,
     setShowAddSectionDialog,
     showPreview,
@@ -57,6 +61,23 @@ const ResumeEditor = () => {
   // If we're loading, show a loading state
   if (loading) {
     return <EditorLoading />;
+  }
+  
+  // If there's an error, provide a way to go back to the dashboard
+  if (error) {
+    return (
+      <div className="container mx-auto py-4 flex flex-col items-center justify-center h-[calc(100vh-100px)]">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold mb-4">Resume Not Found</h2>
+          <p className="text-muted-foreground mb-6">
+            The resume you're looking for could not be found. It may have been deleted or the URL might be incorrect.
+          </p>
+          <Button onClick={() => navigate('/resumes')}>
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

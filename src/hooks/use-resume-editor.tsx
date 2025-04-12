@@ -22,6 +22,7 @@ export const useResumeEditor = () => {
   const [currentSection, setCurrentSection] = useState<string | null>(null);
   const [rawContent, setRawContent] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // UI state
   const [showAddSectionDialog, setShowAddSectionDialog] = useState(false);
@@ -38,17 +39,21 @@ export const useResumeEditor = () => {
     // Load resume data
     if (id) {
       loadResumeData();
+    } else {
+      setError("No resume ID provided");
+      setLoading(false);
+      setHasInitialized(true);
     }
   }, [id]);
 
   // Separated the section initialization into its own effect with proper dependencies
   useEffect(() => {
     // Only run this effect after the initial loading is complete
-    if (!loading && hasInitialized && sections.length === 0) {
+    if (!loading && hasInitialized && sections.length === 0 && !error) {
       console.log("No sections available after loading, creating default section");
       createDefaultSection();
     }
-  }, [loading, hasInitialized, sections.length]);
+  }, [loading, hasInitialized, sections.length, error]);
 
   // Auto-save on changes
   useEffect(() => {
@@ -74,54 +79,97 @@ export const useResumeEditor = () => {
 
   const loadResumeData = () => {
     setLoading(true);
-    const savedResumes = localStorage.getItem('resumes');
-    if (savedResumes) {
-      try {
-        console.log("Loading resumes from localStorage");
-        const resumes = JSON.parse(savedResumes);
-        console.log("Found resumes:", resumes);
-        const resume = resumes.find((r: any) => r.id === id);
-        
-        if (resume) {
-          console.log("Found resume with ID:", id, resume);
-          setResumeTitle(resume.title || 'Untitled Resume');
-          
-          // If resume has sections already, use them
-          if (resume.sections && Array.isArray(resume.sections) && resume.sections.length > 0) {
-            console.log("Using existing sections:", resume.sections);
-            setSections(resume.sections);
-            setCurrentSection(resume.sections[0]?.id || null);
+    setError(null);
+    
+    try {
+      const savedResumes = localStorage.getItem('resumes');
+      
+      if (!savedResumes) {
+        console.error("No resumes found in localStorage");
+        setError("No resumes found");
+        setLoading(false);
+        setHasInitialized(true);
+        return;
+      }
+      
+      console.log("Loading resumes from localStorage");
+      const resumes = JSON.parse(savedResumes);
+      console.log("Found resumes:", resumes);
+      
+      if (!Array.isArray(resumes) || resumes.length === 0) {
+        console.error("No resumes available in localStorage");
+        setError("No resumes available");
+        setLoading(false);
+        setHasInitialized(true);
+        return;
+      }
+      
+      // Check if we're in the special case with :id as the parameter
+      if (id === ':id') {
+        console.error("Invalid resume ID: :id");
+        setError("Invalid resume ID");
+        setLoading(false);
+        setHasInitialized(true);
+        return;
+      }
+      
+      const resume = resumes.find((r: any) => r.id === id);
+      
+      if (!resume) {
+        console.error("Resume not found with ID:", id);
+        setError(`Resume not found with ID: ${id}`);
+        setLoading(false);
+        setHasInitialized(true);
+        return;
+      }
+      
+      console.log("Found resume with ID:", id, resume);
+      setResumeTitle(resume.title || 'Untitled Resume');
+      
+      // If resume has sections already, use them
+      if (resume.sections && Array.isArray(resume.sections) && resume.sections.length > 0) {
+        console.log("Using existing sections:", resume.sections);
+        setSections(resume.sections);
+        setCurrentSection(resume.sections[0]?.id || null);
+      }
+      // Check for pendingOptimizedResume if this is a newly created optimized resume
+      else if (resume.fromOptimization && localStorage.getItem('pendingOptimizedResume')) {
+        try {
+          const optimizedData = JSON.parse(localStorage.getItem('pendingOptimizedResume') || '');
+          if (optimizedData && optimizedData.sections) {
+            console.log("Using sections from optimized resume:", optimizedData.sections);
+            setSections(optimizedData.sections);
+            setCurrentSection(optimizedData.sections[0]?.id || null);
           } else {
-            // Otherwise, parse the content into sections
-            console.log("Parsing content into sections:", resume.content);
-            setRawContent(resume.content || '');
-            const parsedSections = parseContentIntoSections(resume.content || '');
-            console.log("Parsed sections:", parsedSections);
+            console.log("Parsing content from optimized resume:", optimizedData?.content);
+            const parsedSections = parseContentIntoSections(optimizedData?.content || '');
             setSections(parsedSections);
             setCurrentSection(parsedSections[0]?.id || null);
           }
-        } else {
-          console.error("Resume not found with ID:", id);
-          toast({
-            title: "Resume not found",
-            description: "The requested resume could not be loaded.",
-            variant: "destructive"
-          });
-          navigate('/resumes');
+        } catch (err) {
+          console.error("Error parsing optimized resume data:", err);
+          // Fall back to normal content parsing
+          setRawContent(resume.content || '');
+          const parsedSections = parseContentIntoSections(resume.content || '');
+          setSections(parsedSections);
+          setCurrentSection(parsedSections[0]?.id || null);
         }
-      } catch (error) {
-        console.error('Error loading resume:', error);
-        toast({
-          title: "Error loading resume",
-          description: "There was a problem loading your resume.",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-        setHasInitialized(true);
+      } 
+      // Otherwise, parse the content into sections
+      else {
+        console.log("Parsing content into sections:", resume.content);
+        setRawContent(resume.content || '');
+        const parsedSections = parseContentIntoSections(resume.content || '');
+        console.log("Parsed sections:", parsedSections);
+        setSections(parsedSections);
+        setCurrentSection(parsedSections[0]?.id || null);
       }
-    } else {
-      console.error("No resumes found in localStorage");
+      
+      setLoading(false);
+      setHasInitialized(true);
+    } catch (error) {
+      console.error('Error loading resume:', error);
+      setError('Error loading resume data');
       setLoading(false);
       setHasInitialized(true);
     }
@@ -362,6 +410,7 @@ export const useResumeEditor = () => {
     currentSection,
     setCurrentSection,
     loading,
+    error,
     showAddSectionDialog,
     setShowAddSectionDialog,
     showPreview,

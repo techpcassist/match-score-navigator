@@ -8,6 +8,7 @@ interface Resume {
   lastModified: Date;
   content: string;
   sections?: any[];
+  fromOptimization?: boolean;
 }
 
 export const useResumes = () => {
@@ -53,14 +54,15 @@ export const useResumes = () => {
         const optimizedResume = JSON.parse(pendingOptimizedResume);
         
         // Create a new resume from the optimized content
-        createResume(
+        const newResume = createResume(
           optimizedResume.title || 'Optimized Resume',
           optimizedResume.content,
-          optimizedResume.sections || []
+          optimizedResume.sections || [],
+          true // Mark this as coming from optimization
         );
         
-        // Clear the pending optimized resume
-        localStorage.removeItem('pendingOptimizedResume');
+        // Don't clear pendingOptimizedResume yet so it can be used when editing
+        // We'll clear it after the user saves changes to the resume
         
         // Show success toast
         toast({
@@ -73,12 +75,18 @@ export const useResumes = () => {
     }
   };
 
-  const createResume = (title: string, content: string = '', sections: any[] = []) => {
+  const createResume = (
+    title: string, 
+    content: string = '', 
+    sections: any[] = [],
+    fromOptimization: boolean = false
+  ) => {
     const newResume: Resume = {
       id: `resume-${Date.now()}`,
       title,
       lastModified: new Date(),
       content,
+      fromOptimization,
       sections: sections.length > 0 ? sections : [
         {
           id: `section-${Date.now()}-0`,
@@ -104,6 +112,22 @@ export const useResumes = () => {
     setResumes(updatedResumes);
     localStorage.setItem('resumes', JSON.stringify(updatedResumes));
     
+    // If this was an optimized resume and we deleted it, clear the pending data
+    const pendingOptimizedResume = localStorage.getItem('pendingOptimizedResume');
+    if (pendingOptimizedResume) {
+      try {
+        const optimizedResume = JSON.parse(pendingOptimizedResume);
+        const deletedResume = resumes.find(r => r.id === id);
+        
+        if (deletedResume && deletedResume.fromOptimization && 
+            optimizedResume.title === deletedResume.title) {
+          localStorage.removeItem('pendingOptimizedResume');
+        }
+      } catch (error) {
+        console.error('Error processing optimized resume during delete:', error);
+      }
+    }
+    
     toast({
       title: "Resume deleted",
       description: "The resume has been removed from your dashboard.",
@@ -113,11 +137,19 @@ export const useResumes = () => {
   const saveResume = (id: string, updatedData: Partial<Resume>) => {
     const updatedResumes = resumes.map(resume => {
       if (resume.id === id) {
-        return {
+        const savedResume = {
           ...resume,
           ...updatedData,
           lastModified: new Date()
         };
+        
+        // If this was from optimization and we're saving it, clear the pending data
+        if (resume.fromOptimization) {
+          localStorage.removeItem('pendingOptimizedResume');
+          savedResume.fromOptimization = false;
+        }
+        
+        return savedResume;
       }
       return resume;
     });
