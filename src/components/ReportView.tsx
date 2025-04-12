@@ -85,12 +85,27 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
           )}
         </div>
 
-        <ATSChecksSection report={report} />
-        <KeywordsSection report={report} />
-        <AdvancedCriteriaSection report={report} />
-        <PerformanceSection report={report} />
-        <StructureAnalysisSection report={report} />
-        <SuggestionsSection report={report} />
+        <ATSChecksSection checks={report.ats_checks} />
+        <KeywordsSection 
+          hardSkills={report.keywords.hard_skills} 
+          softSkills={report.keywords.soft_skills} 
+        />
+        <AdvancedCriteriaSection criteria={report.advanced_criteria || []} />
+        <PerformanceSection performanceIndicators={report.performance_indicators || {
+          job_kpis: [],
+          resume_kpis: [],
+          match_percentage: 0
+        }} />
+        <StructureAnalysisSection 
+          sectionAnalysis={report.section_analysis || {
+            education: '',
+            experience: '',
+            skills: '',
+            projects: ''
+          }}
+          improvementPotential={report.improvement_potential}
+        />
+        <SuggestionsSection suggestions={report.suggestions} />
         
         {/* Add the new Optimize with AI button in the existing code */}
         <div className="flex justify-center mt-8">
