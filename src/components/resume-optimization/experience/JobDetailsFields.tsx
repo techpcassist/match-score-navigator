@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useAIGeneration } from './hooks/useAIGeneration';
 import { JobDetailsActionButtons } from './components/JobDetailsActionButtons';
 import { SuggestedDutyDisplay } from './components/SuggestedDutyDisplay';
+import { JobDetailsInputs } from './components/JobDetailsInputs';
+import { DescriptionTextarea } from './components/DescriptionTextarea';
+import { JobDetailsTips } from './components/JobDetailsTips';
+import { useSuggestionDisplay } from './hooks/useSuggestionDisplay';
 
 interface JobDetailsFieldsProps {
   id: string;
@@ -36,8 +38,6 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
   onDescriptionChange,
   onGenerateDescription
 }) => {
-  const [showAddDuty, setShowAddDuty] = useState(false);
-  
   const {
     suggestedDuty,
     isEnhancingDuty,
@@ -47,29 +47,17 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
     clearSuggestedDuty
   } = useAIGeneration(title, description);
   
-  const handleAddDuty = () => {
-    if (!suggestedDuty) return;
-    
-    // Add the suggested duty to the current description
-    const updatedDescription = description 
-      ? `${description}\n• ${suggestedDuty}` 
-      : `• ${suggestedDuty}`;
-      
-    onDescriptionChange(updatedDescription);
-    clearSuggestedDuty(); // Clear the suggestion after adding
-  };
-  
-  const handleAddCustomDuty = (customDuty: string) => {
-    if (!customDuty) return;
-    
-    // Add the custom duty to the current description
-    const updatedDescription = description 
-      ? `${description}\n• ${customDuty}` 
-      : `• ${customDuty}`;
-      
-    onDescriptionChange(updatedDescription);
-    setShowAddDuty(false); // Close the popover after adding
-  };
+  const {
+    showAddDuty,
+    setShowAddDuty,
+    handleAddDuty,
+    handleAddCustomDuty
+  } = useSuggestionDisplay({
+    clearSuggestedDuty,
+    description,
+    onDescriptionChange,
+    suggestedDuty
+  });
   
   const handleEnhanceText = () => {
     handleEnhanceDescription(onDescriptionChange);
@@ -78,46 +66,24 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
   return (
     <div className="space-y-2">
       <Label>Job Details (for AI-generated description)</Label>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
-        <div>
-          <Input
-            id={`${id}-team-name`}
-            value={teamName || ''}
-            onChange={(e) => onTeamNameChange(e.target.value)}
-            placeholder="Team Name"
-          />
-        </div>
-        <div>
-          <Input
-            id={`${id}-team-size`}
-            value={teamSize || ''}
-            onChange={(e) => onTeamSizeChange(parseInt(e.target.value) || 0)}
-            placeholder="Team Size"
-            type="number"
-          />
-        </div>
-        <div>
-          <Input
-            id={`${id}-project-name`}
-            value={projectName || ''}
-            onChange={(e) => onProjectNameChange(e.target.value)}
-            placeholder="Project Name"
-          />
-        </div>
-      </div>
+      
+      <JobDetailsInputs
+        id={id}
+        teamName={teamName}
+        teamSize={teamSize}
+        projectName={projectName}
+        onTeamNameChange={onTeamNameChange}
+        onTeamSizeChange={onTeamSizeChange}
+        onProjectNameChange={onProjectNameChange}
+      />
       
       <div className="flex flex-col gap-2">
         <div className="flex items-end gap-2">
-          <div className="flex-grow">
-            <Label htmlFor={`${id}-description`}>Description & Achievements</Label>
-            <Textarea
-              id={`${id}-description`}
-              value={description || ''}
-              onChange={(e) => onDescriptionChange(e.target.value)}
-              placeholder="Include your responsibilities and quantifiable achievements"
-              rows={5}
-            />
-          </div>
+          <DescriptionTextarea
+            id={id}
+            description={description}
+            onDescriptionChange={onDescriptionChange}
+          />
           
           <JobDetailsActionButtons
             id={id}
@@ -142,9 +108,7 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
         />
       </div>
       
-      <p className="text-xs text-muted-foreground">
-        Pro tip: Add job details above and use "Generate Full" for a complete description, "Suggest Duty" for specific responsibilities, or "Enhance Text" to improve existing content.
-      </p>
+      <JobDetailsTips />
     </div>
   );
 };
