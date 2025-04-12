@@ -2,6 +2,7 @@
 import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { AlertCircle } from 'lucide-react';
 
 interface DescriptionTextareaProps {
   id: string;
@@ -14,13 +15,13 @@ export const DescriptionTextarea: React.FC<DescriptionTextareaProps> = ({
   description,
   onDescriptionChange
 }) => {
-  // Check if we're potentially offline (this is a basic check, not comprehensive)
-  const [isOffline, setIsOffline] = React.useState(false);
+  // Check if we're potentially offline or if there are API limitations
+  const [connectionStatus, setConnectionStatus] = React.useState<'online' | 'offline' | 'limited'>('online');
   
   React.useEffect(() => {
     // Update online status
     const handleStatusChange = () => {
-      setIsOffline(!navigator.onLine);
+      setConnectionStatus(navigator.onLine ? 'online' : 'offline');
     };
 
     // Listen for online/offline events
@@ -28,7 +29,7 @@ export const DescriptionTextarea: React.FC<DescriptionTextareaProps> = ({
     window.addEventListener('offline', handleStatusChange);
     
     // Initial check
-    setIsOffline(!navigator.onLine);
+    setConnectionStatus(navigator.onLine ? 'online' : 'offline');
 
     return () => {
       window.removeEventListener('online', handleStatusChange);
@@ -36,13 +37,42 @@ export const DescriptionTextarea: React.FC<DescriptionTextareaProps> = ({
     };
   }, []);
 
+  // Function to handle API rate limit detection
+  React.useEffect(() => {
+    // Check for a flag in localStorage that might have been set during API errors
+    const checkApiLimits = () => {
+      const apiLimitReached = localStorage.getItem('ai_api_limit_reached');
+      if (apiLimitReached) {
+        setConnectionStatus('limited');
+        
+        // Clear this flag after a reasonable time (e.g., 1 hour)
+        const timestamp = parseInt(apiLimitReached, 10);
+        const oneHour = 60 * 60 * 1000;
+        if (Date.now() - timestamp > oneHour) {
+          localStorage.removeItem('ai_api_limit_reached');
+          setConnectionStatus(navigator.onLine ? 'online' : 'offline');
+        }
+      }
+    };
+    
+    checkApiLimits();
+    const interval = setInterval(checkApiLimits, 60000); // Check every minute
+    
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex-grow">
       <div className="flex justify-between items-center">
         <Label htmlFor={`${id}-description`}>Description & Achievements</Label>
-        {isOffline && (
-          <span className="text-xs text-amber-500 font-medium">
-            Offline Mode - Using Fallback Content
+        {connectionStatus !== 'online' && (
+          <span className={`text-xs font-medium flex items-center gap-1 ${
+            connectionStatus === 'offline' ? 'text-amber-500' : 'text-orange-500'
+          }`}>
+            <AlertCircle className="h-3 w-3" />
+            {connectionStatus === 'offline' 
+              ? 'Offline Mode - Using Fallback Content' 
+              : 'API Limit Reached - Using Fallback Content'}
           </span>
         )}
       </div>

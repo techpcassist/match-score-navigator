@@ -75,6 +75,20 @@ serve(async (req) => {
       });
 
       if (!openAIResponse.ok) {
+        // Check if it's a rate limit error (status 429)
+        if (openAIResponse.status === 429) {
+          console.log("OpenAI API rate limit reached, using fallback content");
+          const fallbackText = generateFallbackContent(prompt);
+          return new Response(
+            JSON.stringify({ 
+              generatedText: fallbackText, 
+              source: 'fallback',
+              rateLimited: true
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         throw new Error(`OpenAI API responded with status: ${openAIResponse.status}`);
       }
       
