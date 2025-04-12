@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +40,7 @@ const Index = () => {
 
   const handleRoleConfirm = async (role: UserRole) => {
     setSelectedRole(role);
+    setShowRoleModal(false); // Close the modal right after selection
     await performAnalysis(role);
   };
 
@@ -96,7 +96,7 @@ const Index = () => {
           resume_file_path: storedFilePath,
           resume_id: resumeId,
           job_id: jobId,
-          user_role: userRole // Include the selected role
+          user_role: userRole
         }
       });
       
@@ -127,8 +127,6 @@ const Index = () => {
       });
     } finally {
       setIsAnalyzing(false);
-      // Close the role modal after analysis is complete
-      setShowRoleModal(false);
     }
   };
 
@@ -152,12 +150,14 @@ const Index = () => {
       />
       
       {/* Role Selection Modal with key prop to force remount */}
-      <RoleSelectionModal 
-        key={`role-modal-${showRoleModal}`}
-        isOpen={showRoleModal} 
-        onClose={() => setShowRoleModal(false)} 
-        onConfirm={handleRoleConfirm}
-      />
+      {showRoleModal && (
+        <RoleSelectionModal 
+          key={`role-modal-${showRoleModal}`}
+          isOpen={showRoleModal} 
+          onClose={() => setShowRoleModal(false)} 
+          onConfirm={handleRoleConfirm}
+        />
+      )}
       
       {/* Results Section */}
       {matchScore !== null && report && (
