@@ -1,9 +1,11 @@
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import React from 'react';
 import { WorkExperienceEntry } from './types';
 import { WorkExperienceEntryComponent } from './experience/WorkExperienceEntry';
+import { useWorkExperienceForm } from './experience/hooks/useWorkExperienceForm';
+import { EmptyExperienceState } from './experience/EmptyExperienceState';
+import { ExperienceFormInstructions } from './experience/ExperienceFormInstructions';
+import { AddExperienceButton } from './experience/AddExperienceButton';
 
 interface WorkExperienceFormProps {
   entries: WorkExperienceEntry[];
@@ -11,103 +13,22 @@ interface WorkExperienceFormProps {
 }
 
 export const WorkExperienceForm = ({ entries = [], onChange }: WorkExperienceFormProps) => {
-  const [openEntries, setOpenEntries] = useState<string[]>([
-    entries.length > 0 ? entries[0].id : ''
-  ]);
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
-  
-  const toggleEntry = (id: string) => {
-    setOpenEntries(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(entryId => entryId !== id);
-      } else {
-        return [...prev, id];
-      }
-    });
-  };
-  
-  const updateEntry = (id: string, field: keyof WorkExperienceEntry, value: any) => {
-    if (field === 'description' && !value.startsWith('Led') && !value.startsWith('Designed') && !value.startsWith('Developed') && !value.startsWith('Built') && !value.startsWith('Managed') && !value.startsWith('Conducted') && !value.startsWith('Directed') && !value.startsWith('Spearheaded') && !value.startsWith('Oversaw')) {
-      const updatedEntries = entries.map(entry => {
-        if (entry.id === id) {
-          return { ...entry, [field]: value };
-        }
-        return entry;
-      });
-      
-      onChange(updatedEntries);
-      return;
-    }
-    
-    if (field === 'description') {
-      setGeneratingId(id);
-      setTimeout(() => {
-        const updatedEntries = entries.map(entry => {
-          if (entry.id === id) {
-            return { ...entry, [field]: value };
-          }
-          return entry;
-        });
-        
-        onChange(updatedEntries);
-        setGeneratingId(null);
-      }, 1000);
-    } else {
-      const updatedEntries = entries.map(entry => {
-        if (entry.id === id) {
-          if (field === 'companyLocation') {
-            return { ...entry, companyLocation: { ...entry.companyLocation, ...value } };
-          }
-          return { ...entry, [field]: value };
-        }
-        return entry;
-      });
-      
-      onChange(updatedEntries);
-    }
-  };
-  
-  const addNewEntry = () => {
-    const newEntry: WorkExperienceEntry = {
-      id: `job-${Date.now()}`,
-      company: '',
-      companyLocation: { country: '', state: '', city: '' },
-      title: '',
-      startDate: '',
-      endDate: '',
-      description: '',
-      teamName: '',
-      teamSize: 0,
-      projectName: ''
-    };
-    
-    const updatedEntries = [...(entries || []), newEntry];
-    onChange(updatedEntries);
-    
-    setOpenEntries(prev => [...prev, newEntry.id]);
-  };
-  
-  const removeEntry = (id: string) => {
-    const updatedEntries = entries.filter(entry => entry.id !== id);
-    onChange(updatedEntries);
-    
-    setOpenEntries(prev => prev.filter(entryId => entryId !== id));
-  };
+  const {
+    openEntries,
+    generatingId,
+    toggleEntry,
+    updateEntry,
+    addNewEntry,
+    removeEntry
+  } = useWorkExperienceForm(entries, onChange);
   
   if (!entries || entries.length === 0) {
-    return (
-      <div className="text-center py-6">
-        <p className="text-muted-foreground mb-4">Add your work experience details to improve your resume.</p>
-        <Button onClick={addNewEntry}>Add Work Experience</Button>
-      </div>
-    );
+    return <EmptyExperienceState onAddExperience={addNewEntry} />;
   }
 
   return (
     <div className="space-y-6">
-      <p className="text-muted-foreground mb-4">
-        Complete the details for each work experience entry. Dates and specific achievements with metrics are particularly important for ATS systems.
-      </p>
+      <ExperienceFormInstructions />
       
       <div className="space-y-4">
         {entries.map(entry => (
@@ -123,16 +44,7 @@ export const WorkExperienceForm = ({ entries = [], onChange }: WorkExperienceFor
         ))}
       </div>
       
-      <div className="flex justify-center">
-        <Button 
-          variant="outline" 
-          onClick={addNewEntry}
-          className="flex items-center"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Another Position
-        </Button>
-      </div>
+      <AddExperienceButton onClick={addNewEntry} />
     </div>
   );
 };
