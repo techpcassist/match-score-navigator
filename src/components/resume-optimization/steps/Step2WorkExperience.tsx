@@ -19,7 +19,7 @@ export const Step2WorkExperience: React.FC = () => {
   
   // Check if entries came from AI parsing or manual parsing
   const aiParsedEntries = analysisReport?.parsed_data?.work_experience || [];
-  const hasEntries = workExperienceEntries.length > 0;
+  const hasEntries = workExperienceEntries && workExperienceEntries.length > 0;
   
   return (
     <div className="space-y-6">
@@ -30,7 +30,7 @@ export const Step2WorkExperience: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {!hasEntries && (
+        {!hasEntries && !aiParsedEntries.length && (
           <Alert className="mb-6" variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>

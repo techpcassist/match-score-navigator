@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -10,7 +9,7 @@ interface WorkExperienceFormProps {
   onChange: (entries: WorkExperienceEntry[]) => void;
 }
 
-export const WorkExperienceForm = ({ entries, onChange }: WorkExperienceFormProps) => {
+export const WorkExperienceForm = ({ entries = [], onChange }: WorkExperienceFormProps) => {
   const [openEntries, setOpenEntries] = useState<string[]>([
     entries.length > 0 ? entries[0].id : ''
   ]);
@@ -28,7 +27,6 @@ export const WorkExperienceForm = ({ entries, onChange }: WorkExperienceFormProp
   
   const updateEntry = (id: string, field: keyof WorkExperienceEntry, value: any) => {
     if (field === 'description' && !value.startsWith('Led') && !value.startsWith('Designed') && !value.startsWith('Developed') && !value.startsWith('Built') && !value.startsWith('Managed') && !value.startsWith('Conducted') && !value.startsWith('Directed') && !value.startsWith('Spearheaded') && !value.startsWith('Oversaw')) {
-      // This is a direct update, not generated
       const updatedEntries = entries.map(entry => {
         if (entry.id === id) {
           return { ...entry, [field]: value };
@@ -40,7 +38,6 @@ export const WorkExperienceForm = ({ entries, onChange }: WorkExperienceFormProp
       return;
     }
     
-    // For generating a description or updating other fields
     if (field === 'description') {
       setGeneratingId(id);
       setTimeout(() => {
@@ -83,7 +80,7 @@ export const WorkExperienceForm = ({ entries, onChange }: WorkExperienceFormProp
       projectName: ''
     };
     
-    const updatedEntries = [...entries, newEntry];
+    const updatedEntries = [...(entries || []), newEntry];
     onChange(updatedEntries);
     
     setOpenEntries(prev => [...prev, newEntry.id]);
@@ -96,10 +93,10 @@ export const WorkExperienceForm = ({ entries, onChange }: WorkExperienceFormProp
     setOpenEntries(prev => prev.filter(entryId => entryId !== id));
   };
   
-  if (entries.length === 0) {
+  if (!entries || entries.length === 0) {
     return (
       <div className="text-center py-6">
-        <p className="text-muted-foreground mb-4">We couldn't automatically detect your work experience. Let's add it now.</p>
+        <p className="text-muted-foreground mb-4">Add your work experience details to improve your resume.</p>
         <Button onClick={addNewEntry}>Add Work Experience</Button>
       </div>
     );

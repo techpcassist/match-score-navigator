@@ -4,7 +4,9 @@ import { WorkExperienceEntry } from '../../types';
 // Parse the resume text to extract work experience entries
 export const parseResumeForWorkExperience = (resumeText: string, analysisReport?: any): WorkExperienceEntry[] => {
   // If we have AI-parsed data from the analysis report, use it first
-  if (analysisReport?.parsed_data?.work_experience && analysisReport.parsed_data.work_experience.length > 0) {
+  if (analysisReport?.parsed_data?.work_experience && 
+      Array.isArray(analysisReport.parsed_data.work_experience) && 
+      analysisReport.parsed_data.work_experience.length > 0) {
     console.log("Using AI-parsed work experience data:", analysisReport.parsed_data.work_experience);
     
     // Map the AI parsed data to our WorkExperienceEntry type
