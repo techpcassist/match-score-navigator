@@ -1,124 +1,121 @@
+import React, { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import ATSChecksSection from "./report/ATSChecksSection";
+import KeywordsSection from "./report/KeywordsSection";
+import ScoreDisplay from "./report/ScoreDisplay";
+import SuggestionsSection from "./report/SuggestionsSection";
+import OptimizationPanel from "./resume-optimization/OptimizationPanel";
+import StructureAnalysisSection from "./report/StructureAnalysisSection";
+import AdvancedCriteriaSection from "./report/AdvancedCriteriaSection";
+import PerformanceSection from "./report/PerformanceSection";
+import { TrophyIcon, ArrowRight, Sparkles } from "lucide-react";
+import ResumeParsingModal from './resume-optimization/parser/ResumeParsingModal';
+import ResumeOptimizationPage from './resume-optimization/parser/ResumeOptimizationPage';
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScoreDisplay } from './report/ScoreDisplay';
-import { KeywordsSection } from './report/KeywordsSection';
-import { ATSChecksSection } from './report/ATSChecksSection';
-import { AdvancedCriteriaSection } from './report/AdvancedCriteriaSection';
-import { SuggestionsSection } from './report/SuggestionsSection';
-import { PerformanceSection } from './report/PerformanceSection';
-import { StructureAnalysisSection } from './report/StructureAnalysisSection';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Wand, UserCircle, Briefcase } from 'lucide-react';
-import { UserRole } from './RoleSelectionModal';
-import { OptimizationPanel } from './resume-optimization/OptimizationPanel';
+const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionText }) => {
+  const [optimizationMode, setOptimizationMode] = useState(false);
+  const [showParsingModal, setShowParsingModal] = useState(false);
+  const [parsedResumeData, setParsedResumeData] = useState(null);
+  const { toast } = useToast();
 
-interface ReportViewProps {
-  matchScore: number;
-  report: any;
-  userRole?: UserRole | null;
-  resumeText?: string;
-  jobDescriptionText?: string;
-}
-
-const ReportView = ({ matchScore, report, userRole, resumeText = '', jobDescriptionText = '' }: ReportViewProps) => {
-  const [showOptimizationPanel, setShowOptimizationPanel] = useState(false);
-  
-  // Role label elements
-  const RoleLabel = () => {
-    if (!userRole) return null;
+  // Handle parse resume action
+  const handleParseResume = () => {
+    if (!resumeText?.trim()) {
+      toast({
+        title: "No resume found",
+        description: "Please upload or paste your resume before optimizing.",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    return (
-      <Badge variant="outline" className="ml-4 flex items-center">
-        {userRole === 'job_seeker' ? (
-          <>
-            <UserCircle className="h-4 w-4 mr-1" />
-            <span>Job Seeker View</span>
-          </>
-        ) : (
-          <>
-            <Briefcase className="h-4 w-4 mr-1" />
-            <span>Recruiter View</span>
-          </>
-        )}
-      </Badge>
-    );
+    setShowParsingModal(true);
+  };
+  
+  // Handle parsed data from the parsing modal
+  const handleParseComplete = (data) => {
+    setParsedResumeData(data);
+    setShowParsingModal(false);
+    setOptimizationMode(true);
+  };
+  
+  // Handle back button from optimization page
+  const handleBackFromOptimization = () => {
+    setOptimizationMode(false);
+  };
+  
+  // Handle proceed button from optimization page
+  const handleProceedFromOptimization = (updatedData) => {
+    // Here you would process the edited data and move to the next step
+    // For now, just log it and show a toast
+    console.log("Proceeding with optimized data:", updatedData);
+    toast({
+      title: "Data saved",
+      description: "Your optimized resume data has been processed.",
+    });
+    
+    // In a real implementation, this would trigger the next step in your workflow
+    setOptimizationMode(false);
   };
 
-  const handleOptimizeClick = () => {
-    setShowOptimizationPanel(true);
-  };
+  if (optimizationMode && parsedResumeData) {
+    return (
+      <ResumeOptimizationPage
+        parsedData={parsedResumeData}
+        onBack={handleBackFromOptimization}
+        onProceed={handleProceedFromOptimization}
+      />
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      {showOptimizationPanel ? (
-        <OptimizationPanel 
-          resumeText={resumeText}
-          jobDescriptionText={jobDescriptionText}
-          analysisReport={report}
-          onClose={() => setShowOptimizationPanel(false)}
-        />
-      ) : (
-        <Card className="w-full mb-8">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center">
-                <CardTitle className="text-2xl font-bold">Match Analysis</CardTitle>
-                <RoleLabel />
-              </div>
-              
-              {userRole === 'job_seeker' && (
-                <Button 
-                  className="mt-4 sm:mt-0"
-                  onClick={handleOptimizeClick}
-                >
-                  <Wand className="h-4 w-4 mr-2" />
-                  Optimize with AI
-                </Button>
-              )}
+    <>
+      <div className="space-y-8">
+        <ScoreDisplay matchScore={matchScore} />
+
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold tracking-tight">Analysis Report</h2>
+          {userRole === "recruiter" && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <TrophyIcon className="mr-2 h-4 w-4" />
+              Recruiter View
             </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <ScoreDisplay matchScore={matchScore} />
+          )}
+        </div>
 
-            {report.keywords && (
-              <KeywordsSection 
-                hardSkills={report.keywords.hard_skills} 
-                softSkills={report.keywords.soft_skills} 
-              />
-            )}
-            
-            {report.ats_checks && (
-              <ATSChecksSection 
-                checks={report.ats_checks} 
-              />
-            )}
-            
-            {report.advanced_criteria && (
-              <AdvancedCriteriaSection criteria={report.advanced_criteria} />
-            )}
-            
-            {report.performance_indicators && (
-              <PerformanceSection 
-                performanceIndicators={report.performance_indicators} 
-              />
-            )}
-
-            {report.section_analysis && (
-              <StructureAnalysisSection 
-                sectionAnalysis={report.section_analysis}
-                improvementPotential={report.improvement_potential}
-              />
-            )}
-            
-            {report.suggestions && (
-              <SuggestionsSection suggestions={report.suggestions} />
-            )}
-          </CardContent>
-        </Card>
+        <ATSChecksSection report={report} />
+        <KeywordsSection report={report} />
+        <AdvancedCriteriaSection report={report} />
+        <PerformanceSection report={report} />
+        <StructureAnalysisSection report={report} />
+        <SuggestionsSection report={report} />
+        
+        {/* Add the new Optimize with AI button in the existing code */}
+        <div className="flex justify-center mt-8">
+          <Button 
+            onClick={handleParseResume}
+            variant="default" 
+            size="lg"
+            className="flex items-center"
+          >
+            <Sparkles className="mr-2" />
+            Optimize with AI Suggestions
+          </Button>
+        </div>
+        
+      </div>
+      
+      {/* Parsing Modal */}
+      {showParsingModal && (
+        <ResumeParsingModal
+          isOpen={showParsingModal}
+          onClose={() => setShowParsingModal(false)}
+          resumeText={resumeText}
+          onParseComplete={handleParseComplete}
+        />
       )}
-    </div>
+    </>
   );
 };
 

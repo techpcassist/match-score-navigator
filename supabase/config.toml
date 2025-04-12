@@ -1,5 +1,8 @@
 
-project_id = "kfdsojlqnezrimzvucwt"
+project_id = "lovable"
 
 [functions.compare-resume]
+verify_jwt = false
+
+[functions.parse-resume]
 verify_jwt = false
