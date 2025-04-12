@@ -20,8 +20,13 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
   const [parsedResumeData, setParsedResumeData] = useState(null);
   const { toast } = useToast();
 
+  // For debugging
+  console.log("ReportView rendered with resumeText:", resumeText ? "Present (length: " + resumeText.length + ")" : "Not present");
+
   // Handle parse resume action
   const handleParseResume = () => {
+    console.log("handleParseResume called, resumeText:", resumeText ? resumeText.substring(0, 50) + "..." : "null or empty");
+    
     // Check if resumeText exists and is not empty
     if (!resumeText || resumeText.trim() === '') {
       toast({
