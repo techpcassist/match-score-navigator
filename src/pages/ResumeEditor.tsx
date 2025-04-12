@@ -1,16 +1,12 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { PlusCircle } from 'lucide-react';
 import { useResumeEditor } from '@/hooks/use-resume-editor';
 import { SectionTabs } from '@/components/resume-editor/SectionTabs';
 import { EditorHeader } from '@/components/resume-editor/EditorHeader';
-import { SectionControls } from '@/components/resume-editor/SectionControls';
 import { SectionEditor } from '@/components/resume-dashboard/SectionEditor';
 import { ResumePreview } from '@/components/resume-dashboard/ResumePreview';
 import { AddSectionDialog } from '@/components/resume-dashboard/AddSectionDialog';
-import { AIAssistant } from '@/components/resume-dashboard/AIAssistant';
 import { EditorEmptyState } from '@/components/resume-editor/EditorEmptyState';
 import { EditorLoading } from '@/components/resume-editor/EditorLoading';
 import { EditorMainContent } from '@/components/resume-editor/EditorMainContent';

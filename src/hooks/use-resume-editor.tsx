@@ -1,15 +1,15 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { resumeExporter } from '@/utils/resumeExporter';
-
-// Resume section type
-interface ResumeSection {
-  id: string;
-  title: string;
-  content: string;
-  type: string;
-}
+import { ResumeSection } from '@/types/resume';
+import { 
+  parseContentIntoSections, 
+  generateResumeContent, 
+  createDefaultSection 
+} from '@/utils/resumeParser';
+import { loadResumeData, saveResumeToStorage } from '@/utils/resumeStorage';
 
 export const useResumeEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,13 +37,17 @@ export const useResumeEditor = () => {
 
   useEffect(() => {
     // Load resume data
-    if (id) {
-      loadResumeData();
-    } else {
-      setError("No resume ID provided");
-      setLoading(false);
-      setHasInitialized(true);
-    }
+    loadResumeData(
+      id, 
+      setResumeTitle, 
+      setSections, 
+      setCurrentSection, 
+      setRawContent, 
+      setLoading, 
+      setError, 
+      setHasInitialized,
+      parseContentIntoSections
+    );
   }, [id]);
 
   // Separated the section initialization into its own effect with proper dependencies
@@ -51,7 +55,9 @@ export const useResumeEditor = () => {
     // Only run this effect after the initial loading is complete
     if (!loading && hasInitialized && sections.length === 0 && !error) {
       console.log("No sections available after loading, creating default section");
-      createDefaultSection();
+      const defaultSection = createDefaultSection();
+      setSections([defaultSection]);
+      setCurrentSection(defaultSection.id);
     }
   }, [loading, hasInitialized, sections.length, error]);
 
@@ -77,237 +83,9 @@ export const useResumeEditor = () => {
     };
   }, [sections, resumeTitle, isEditing]);
 
-  const loadResumeData = () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const savedResumes = localStorage.getItem('resumes');
-      
-      if (!savedResumes) {
-        console.error("No resumes found in localStorage");
-        setError("No resumes found");
-        setLoading(false);
-        setHasInitialized(true);
-        return;
-      }
-      
-      console.log("Loading resumes from localStorage");
-      const resumes = JSON.parse(savedResumes);
-      console.log("Found resumes:", resumes);
-      
-      if (!Array.isArray(resumes) || resumes.length === 0) {
-        console.error("No resumes available in localStorage");
-        setError("No resumes available");
-        setLoading(false);
-        setHasInitialized(true);
-        return;
-      }
-      
-      // Check if we're in the special case with :id as the parameter
-      if (id === ':id') {
-        console.error("Invalid resume ID: :id");
-        setError("Invalid resume ID");
-        setLoading(false);
-        setHasInitialized(true);
-        return;
-      }
-      
-      const resume = resumes.find((r: any) => r.id === id);
-      
-      if (!resume) {
-        console.error("Resume not found with ID:", id);
-        setError(`Resume not found with ID: ${id}`);
-        setLoading(false);
-        setHasInitialized(true);
-        return;
-      }
-      
-      console.log("Found resume with ID:", id, resume);
-      setResumeTitle(resume.title || 'Untitled Resume');
-      
-      // If resume has sections already, use them
-      if (resume.sections && Array.isArray(resume.sections) && resume.sections.length > 0) {
-        console.log("Using existing sections:", resume.sections);
-        setSections(resume.sections);
-        setCurrentSection(resume.sections[0]?.id || null);
-      }
-      // Check for pendingOptimizedResume if this is a newly created optimized resume
-      else if (resume.fromOptimization && localStorage.getItem('pendingOptimizedResume')) {
-        try {
-          const optimizedData = JSON.parse(localStorage.getItem('pendingOptimizedResume') || '');
-          if (optimizedData && optimizedData.sections) {
-            console.log("Using sections from optimized resume:", optimizedData.sections);
-            setSections(optimizedData.sections);
-            setCurrentSection(optimizedData.sections[0]?.id || null);
-          } else {
-            console.log("Parsing content from optimized resume:", optimizedData?.content);
-            const parsedSections = parseContentIntoSections(optimizedData?.content || '');
-            setSections(parsedSections);
-            setCurrentSection(parsedSections[0]?.id || null);
-          }
-        } catch (err) {
-          console.error("Error parsing optimized resume data:", err);
-          // Fall back to normal content parsing
-          setRawContent(resume.content || '');
-          const parsedSections = parseContentIntoSections(resume.content || '');
-          setSections(parsedSections);
-          setCurrentSection(parsedSections[0]?.id || null);
-        }
-      } 
-      // Otherwise, parse the content into sections
-      else {
-        console.log("Parsing content into sections:", resume.content);
-        setRawContent(resume.content || '');
-        const parsedSections = parseContentIntoSections(resume.content || '');
-        console.log("Parsed sections:", parsedSections);
-        setSections(parsedSections);
-        setCurrentSection(parsedSections[0]?.id || null);
-      }
-      
-      setLoading(false);
-      setHasInitialized(true);
-    } catch (error) {
-      console.error('Error loading resume:', error);
-      setError('Error loading resume data');
-      setLoading(false);
-      setHasInitialized(true);
-    }
-  };
-
-  const createDefaultSection = () => {
-    const defaultSection = {
-      id: `section-${Date.now()}-0`,
-      title: "Summary",
-      content: "",
-      type: "summary"
-    };
-    setSections([defaultSection]);
-    setCurrentSection(defaultSection.id);
-  };
-
-  // Parse resume content into sections
-  const parseContentIntoSections = (content: string): ResumeSection[] => {
-    if (!content || typeof content !== 'string') {
-      console.log("Creating default section due to empty content");
-      return [{
-        id: `section-${Date.now()}-0`,
-        title: "Summary",
-        content: "",
-        type: "summary"
-      }];
-    }
-    
-    const lines = content.split('\n');
-    const parsedSections: ResumeSection[] = [];
-    let currentType = "summary";
-    let currentTitle = "Summary";
-    let currentContent = "";
-    
-    // Process each line
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      
-      // Check if this is a section header
-      const isSectionHeader = line.match(/^[A-Z][A-Za-z\s]*$/) && line.length < 30;
-      
-      if (isSectionHeader && currentContent) {
-        // Save the current section
-        parsedSections.push({
-          id: `section-${Date.now()}-${parsedSections.length}`,
-          title: currentTitle,
-          content: currentContent.trim(),
-          type: currentType
-        });
-        
-        // Start a new section
-        currentContent = "";
-        currentTitle = line;
-        
-        // Determine section type based on title
-        if (/contact|phone|email|address/i.test(line)) currentType = "contact";
-        else if (/summary|objective|profile/i.test(line)) currentType = "summary";
-        else if (/experience|work|employment|history/i.test(line)) currentType = "experience";
-        else if (/education|academic|school|university|college/i.test(line)) currentType = "education";
-        else if (/skill|expertise|competenc/i.test(line)) currentType = "skills";
-        else if (/project/i.test(line)) currentType = "projects";
-        else if (/certification|certificate/i.test(line)) currentType = "certifications";
-        else if (/award|honor|achievement/i.test(line)) currentType = "awards";
-        else if (/language/i.test(line)) currentType = "languages";
-        else if (/interest|hobby|activit/i.test(line)) currentType = "interests";
-        else if (/reference/i.test(line)) currentType = "references";
-        else currentType = "custom";
-      } else {
-        // Add line to current content
-        currentContent += line + '\n';
-      }
-    }
-    
-    // Add the last section
-    if (currentContent.trim()) {
-      parsedSections.push({
-        id: `section-${Date.now()}-${parsedSections.length}`,
-        title: currentTitle,
-        content: currentContent.trim(),
-        type: currentType
-      });
-    }
-    
-    // If no sections were created, create a default summary section
-    if (parsedSections.length === 0) {
-      console.log("Creating default section as no sections were parsed");
-      parsedSections.push({
-        id: `section-${Date.now()}-0`,
-        title: "Summary",
-        content: content.trim(),
-        type: "summary"
-      });
-    }
-    
-    return parsedSections;
-  };
-
   // Save the resume data
   const saveResume = () => {
-    if (!id) return;
-    
-    try {
-      const savedResumes = localStorage.getItem('resumes');
-      const resumes = savedResumes ? JSON.parse(savedResumes) : [];
-      
-      // Find the resume index
-      const resumeIndex = resumes.findIndex((r: any) => r.id === id);
-      
-      if (resumeIndex !== -1) {
-        // Update existing resume
-        resumes[resumeIndex] = {
-          ...resumes[resumeIndex],
-          title: resumeTitle,
-          lastModified: new Date(),
-          content: generateResumeContent(),
-          sections: sections
-        };
-      }
-      
-      localStorage.setItem('resumes', JSON.stringify(resumes));
-      
-      toast({
-        title: "Resume saved",
-        description: "Your changes have been saved successfully."
-      });
-    } catch (error) {
-      console.error('Error saving resume:', error);
-      toast({
-        title: "Error saving resume",
-        description: "There was a problem saving your changes.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Generate full resume content from sections
-  const generateResumeContent = (): string => {
-    return sections.map(section => `${section.title}\n\n${section.content}`).join('\n\n');
+    saveResumeToStorage(id, resumeTitle, sections);
   };
 
   // Handle section updates
@@ -424,6 +202,6 @@ export const useResumeEditor = () => {
     handleDeleteSection,
     handleMoveSection,
     handleAISuggestion,
-    generateResumeContent
+    generateResumeContent: () => generateResumeContent(sections)
   };
 };
