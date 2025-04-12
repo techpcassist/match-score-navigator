@@ -48,31 +48,37 @@ serve(async (req) => {
       ],
     });
 
-    // Construct the comprehensive prompt for parsing any resume format
+    // Construct the comprehensive prompt with STRONGER emphasis on accuracy and not inventing data
     const prompt = `
-    You are an expert resume parser that can handle ANY resume format (traditional, creative, academic, etc.) with high accuracy. Parse the following resume text STRICTLY based on its content into a structured JSON object. Do NOT invent information or assume details not present.
+    You are an expert resume parser that can handle ANY resume format (traditional, creative, academic, etc.) with high accuracy. Parse the following resume text STRICTLY based on its content into a structured JSON object. 
+    
+    CRITICAL INSTRUCTION: You MUST NOT invent, assume, or generate ANY information that is not explicitly present in the resume. If information is not clearly stated in the resume, mark it as null or omit it entirely. DO NOT HALLUCINATE COMPANIES, POSITIONS, OR ANY OTHER DETAILS.
 
     1. Identify Sections: Recognize both standard and non-standard section headers like 'Contact Information', 'Summary'/'Objective', 'Skills', 'Work Experience'/'Employment History'/'Professional Experience', 'Education', 'Certifications', 'Projects', 'Publications', 'Patents', 'Volunteer Work', etc.
     
-    2. Parse Contact Details: Extract full_name, email, phone, whatsapp? (if distinct and clearly identifiable), linkedin? (URL/ID), website? (portfolio or personal site) into a contact_details object.
+    2. Parse Contact Details: Extract full_name, email, phone, whatsapp? (if distinct and clearly identifiable), linkedin? (URL/ID), website? (portfolio or personal site) into a contact_details object. Only include fields that are EXPLICITLY present in the text.
     
-    3. Generate Summary: Create a summary (string): Generate a concise 3-5 line summary based ONLY on the actual content and key terms found throughout the resume.
+    3. Generate Summary: Create a summary (string): Generate a concise 3-5 line summary based ONLY on the actual content and key terms found throughout the resume. Do not invent new information.
     
     4. Parse Skills: Extract skills from both dedicated 'Skills' sections AND skills mentioned throughout the document. Return as a skills array (array of strings).
     
-    5. Parse Work Experience (CRITICAL DETAIL):
+    5. Parse Work Experience (CRITICAL INSTRUCTION):
+       - Extract ONLY work experiences that are EXPLICITLY listed in the resume
+       - DO NOT generate or invent any companies, positions, or details that are not clearly stated
+       - If a section or certain details within a job entry are ambiguous, mark them as null or omit them
+       - Never assume information or "fill in gaps" with reasonable guesses
        - Handle Various Formats: Identify job entries regardless of format (bullet points, paragraphs, tables, etc.). Look for patterns that indicate new jobs like changes in company names, dates, titles, or formatting.
-       - Extract for EACH Entry: For every distinct job entry identified:
-         - Extract company_name (string).
-         - Extract location: state (string), country (string), city (string if available).
-         - Extract start_date and end_date (strings). Normalize date formats to MM/YYYY or Month YYYY format when possible. Identify 'Present'/'Till Date'/'Current' for ongoing roles. If dates are ambiguous or missing, return null or the text as found.
-         - Locate job_title (string): Look for job titles in various positions - above company name, after company name, before dates, or in the first sentence of descriptions. If no clear title is found, return null.
-         - Extract responsibilities_text (string): Capture ALL text describing this role, including bullet points, paragraphs, and achievements.
+       - Extract for EACH Entry: For every distinct job entry CLEARLY identified:
+         - Extract company_name (string) ONLY if clearly stated. If not found or ambiguous, return null.
+         - Extract location: state (string), country (string), city (string if available), ONLY if clearly stated.
+         - Extract start_date and end_date (strings). Normalize date formats to MM/YYYY or Month YYYY format when possible. Identify 'Present'/'Till Date'/'Current' for ongoing roles. If dates are ambiguous or missing, return null.
+         - Locate job_title (string): Look for job titles in various positions. If no clear title is found, return null.
+         - Extract responsibilities_text (string): Capture text describing this role, including bullet points, paragraphs, and achievements.
          - Extract skills_tools_used (array): Identify technical skills, tools, frameworks, methodologies mentioned specifically within THIS job description.
        - Maintain Chronology: Ensure entries are ordered by date, typically newest to oldest.
     
     6. Parse Education & Certifications:
-       - Detect both formal degrees and professional certifications.
+       - Detect ONLY formal degrees and professional certifications that are EXPLICITLY mentioned
        - For each entry, extract course_certification_name, institute_name, university_name?, state, country, start_date?, end_date?, gpa? (if mentioned), and determine is_certification (boolean).
        - If is_certification is true, extract certificate_authority?, certificate_number?, validity?. Return null for fields not found.
        - Collate into an education array.
@@ -83,9 +89,11 @@ serve(async (req) => {
        - Handle various date formats (MM/YYYY, Month YYYY, Season YYYY, etc.)
        - Recognize section headers even if they use non-standard phrasing
     
-    8. Handle Missing Information: If any field cannot be reliably found, return null for that specific field. Do not guess, infer widely, or pull information from unrelated parts of the resume. Your output must strictly reflect the input text structure and content.
+    8. Handle Missing Information: If any field cannot be reliably found, return null for that specific field. DO NOT guess, infer, or pull information from unrelated parts of the resume. Your output must strictly reflect ONLY what is EXPLICITLY stated in the input text.
     
-    9. Output Format: Return ONLY the structured JSON object containing the extracted data. Do not include any explanations or text outside the JSON.
+    9. Consistency Check: After parsing, review the extracted data and verify that ALL information corresponds to what is explicitly stated in the resume. Remove any entries or fields where you are not highly confident in their accuracy.
+    
+    10. Output Format: Return ONLY the structured JSON object containing the extracted data. Do not include any explanations or text outside the JSON.
     
     Example output format:
     {
@@ -143,16 +151,18 @@ serve(async (req) => {
     RESUME TEXT:
     ${resume_text}
     
+    FINAL REMINDER: DO NOT INVENT OR ASSUME ANY INFORMATION. Only include information that is EXPLICITLY stated in the resume. If you're unsure about any information, mark it as null or omit it entirely.
+    
     Respond with ONLY valid JSON without any markdown formatting or explanations.
     `;
 
-    // Generate content using the model with increased temperature for better parsing adaptability
+    // Generate content using the model with lower temperature for more factual responses
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.2, // Low temperature for more deterministic, factual responses
-        topP: 0.95,       // High top-p for some controlled diversity in responses
-        topK: 40,         // Reasonable top-k value for diverse yet focused responses
+        temperature: 0.1, // Lower temperature for more deterministic, factual responses
+        topP: 0.85,       // Controlled diversity for reliability
+        topK: 30,         // More focused responses
         maxOutputTokens: 8192, // Allow for long outputs to handle complex resumes
       }
     });
@@ -169,16 +179,13 @@ serve(async (req) => {
       // Parse the cleaned JSON content
       const parsedData = JSON.parse(jsonContent);
       
-      // Basic validation of the structure
-      if (!parsedData.summary || !Array.isArray(parsedData.experiences) || 
-          !Array.isArray(parsedData.education) || !parsedData.contact_details) {
-        throw new Error("Invalid response structure from AI model");
-      }
+      // Enhanced validation to catch potential hallucinations
+      const validatedData = validateParsedData(parsedData, resume_text);
       
-      console.log("Successfully parsed resume data");
+      console.log("Successfully parsed and validated resume data");
       
       // Apply post-processing to normalize data and handle edge cases
-      const processedData = postProcessResumeData(parsedData);
+      const processedData = postProcessResumeData(validatedData);
       
       return new Response(JSON.stringify({ success: true, data: processedData }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -213,6 +220,76 @@ serve(async (req) => {
     });
   }
 });
+
+/**
+ * Validates the parsed data against the original resume text to catch potential hallucinations
+ */
+function validateParsedData(data: any, originalText: string): any {
+  const validated = { ...data };
+  
+  // Validate work experiences
+  if (validated.experiences && Array.isArray(validated.experiences)) {
+    // Filter out potentially hallucinated companies
+    validated.experiences = validated.experiences.filter((exp: any) => {
+      if (!exp.company_name) return true; // Keep entries with null company names
+      
+      // Check if company name appears in the resume text (allowing for case insensitivity)
+      const companyNameRegex = new RegExp(
+        exp.company_name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 
+        'i'
+      );
+      
+      const companyFound = companyNameRegex.test(originalText);
+      
+      if (!companyFound) {
+        console.log(`Potential hallucination detected: Company "${exp.company_name}" not found in resume text`);
+      }
+      
+      return companyFound;
+    });
+    
+    // Further validate job titles within legitimate companies
+    validated.experiences = validated.experiences.map((exp: any) => {
+      if (!exp.job_title) return exp;
+      
+      // Check if the job title appears in the text or is similar to phrases in the text
+      const titleRegex = new RegExp(exp.job_title.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i');
+      const titleFound = titleRegex.test(originalText);
+      
+      if (!titleFound) {
+        console.log(`Potential hallucination detected: Job title "${exp.job_title}" for company "${exp.company_name}" not found in resume text`);
+        return { ...exp, job_title: null }; // Nullify potentially hallucinated job title
+      }
+      
+      return exp;
+    });
+  }
+  
+  // Validate education entries
+  if (validated.education && Array.isArray(validated.education)) {
+    validated.education = validated.education.filter((edu: any) => {
+      // Check for institute or course name in the text
+      const instituteName = edu.institute_name || '';
+      const courseName = edu.course_certification_name || '';
+      
+      const instituteRegex = new RegExp(instituteName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i');
+      const courseRegex = new RegExp(courseName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i');
+      
+      const instituteFound = instituteName ? instituteRegex.test(originalText) : false;
+      const courseFound = courseName ? courseRegex.test(originalText) : false;
+      
+      const isValid = instituteFound || courseFound;
+      
+      if (!isValid && (instituteName || courseName)) {
+        console.log(`Potential hallucination detected: Education entry "${instituteName || courseName}" not found in resume text`);
+      }
+      
+      return isValid;
+    });
+  }
+  
+  return validated;
+}
 
 /**
  * Post-processes the parsed resume data to handle edge cases and normalize formats
