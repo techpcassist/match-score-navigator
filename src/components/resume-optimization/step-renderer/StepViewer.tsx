@@ -53,7 +53,7 @@ export const StepViewer: React.FC<StepViewerProps> = ({
 
   return (
     <div className="step-content">
-      <p className="text-sm text-muted-foreground mb-4">{getProgressMessage()}</p>
+      <p className="text-sm text-muted-foreground mb-4 px-6">{getProgressMessage()}</p>
       {renderStep(currentStep, { 
         resumeText, 
         jobDescriptionText, 
