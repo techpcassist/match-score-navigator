@@ -20,7 +20,7 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
   const [showParsingModal, setShowParsingModal] = useState(false);
   const [parsedResumeData, setParsedResumeData] = useState(null);
   const [localResumeText, setLocalResumeText] = useState('');
-  const [localJobText, setLocalJobText] = useState(''); // Added to store job text locally
+  const [localJobText, setLocalJobText] = useState(''); 
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -100,18 +100,134 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
     navigate('/resumes');
   };
   
+  // Save current resume directly to editor
+  const handleSaveAndEdit = () => {
+    if (!resumeText && !localResumeText) {
+      toast({
+        title: "No resume found",
+        description: "Please upload or paste your resume first.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const content = resumeText || localResumeText;
+    
+    // Create resume sections from the content
+    const sections = parseContentIntoSections(content);
+    
+    // Create a new resume entry
+    const newResume = {
+      id: `resume-${Date.now()}`,
+      title: `Resume Analysis (${new Date().toLocaleDateString()})`,
+      lastModified: new Date(),
+      content: content,
+      sections: sections
+    };
+    
+    // Get existing resumes or initialize empty array
+    const savedResumes = localStorage.getItem('resumes');
+    const resumes = savedResumes ? JSON.parse(savedResumes) : [];
+    
+    // Add new resume to the array
+    resumes.push(newResume);
+    
+    // Save updated resumes array
+    localStorage.setItem('resumes', JSON.stringify(resumes));
+    
+    toast({
+      title: "Resume saved",
+      description: "Your resume has been saved to your dashboard.",
+    });
+    
+    // Navigate directly to the editor for this resume
+    navigate(`/resumes/edit/${newResume.id}`);
+  };
+  
+  // Parse resume content into sections
+  const parseContentIntoSections = (content: string): any[] => {
+    if (!content) return [];
+    
+    const lines = content.split('\n');
+    const parsedSections: any[] = [];
+    let currentType = "summary";
+    let currentTitle = "Summary";
+    let currentContent = "";
+    
+    // Process each line
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Check if this is a section header
+      const isSectionHeader = line.match(/^[A-Z][A-Za-z\s]*$/) && line.length < 30;
+      
+      if (isSectionHeader && currentContent) {
+        // Save the current section
+        parsedSections.push({
+          id: `section-${Date.now()}-${parsedSections.length}`,
+          title: currentTitle,
+          content: currentContent.trim(),
+          type: currentType
+        });
+        
+        // Start a new section
+        currentContent = "";
+        currentTitle = line;
+        
+        // Determine section type based on title
+        if (/contact|phone|email|address/i.test(line)) currentType = "contact";
+        else if (/summary|objective|profile/i.test(line)) currentType = "summary";
+        else if (/experience|work|employment|history/i.test(line)) currentType = "experience";
+        else if (/education|academic|school|university|college/i.test(line)) currentType = "education";
+        else if (/skill|expertise|competenc/i.test(line)) currentType = "skills";
+        else if (/project/i.test(line)) currentType = "projects";
+        else if (/certification|certificate/i.test(line)) currentType = "certifications";
+        else if (/award|honor|achievement/i.test(line)) currentType = "awards";
+        else if (/language/i.test(line)) currentType = "languages";
+        else if (/interest|hobby|activit/i.test(line)) currentType = "interests";
+        else if (/reference/i.test(line)) currentType = "references";
+        else currentType = "custom";
+      } else {
+        // Add line to current content
+        currentContent += line + '\n';
+      }
+    }
+    
+    // Add the last section
+    if (currentContent.trim()) {
+      parsedSections.push({
+        id: `section-${Date.now()}-${parsedSections.length}`,
+        title: currentTitle,
+        content: currentContent.trim(),
+        type: currentType
+      });
+    }
+    
+    // If no sections were created, create a default summary section
+    if (parsedSections.length === 0) {
+      parsedSections.push({
+        id: `section-${Date.now()}-0`,
+        title: "Summary",
+        content: content.trim(),
+        type: "summary"
+      });
+    }
+    
+    return parsedSections;
+  };
+  
   // Build a complete resume content from the optimized data
   const buildResumeContentFromData = (data) => {
     let content = '';
     
     // Add contact information if available
-    if (data.contactInfo) {
+    if (data.contact_details) {
       content += `Contact Information\n\n`;
-      if (data.contactInfo.name) content += `${data.contactInfo.name}\n`;
-      if (data.contactInfo.email) content += `${data.contactInfo.email}\n`;
-      if (data.contactInfo.phone) content += `${data.contactInfo.phone}\n`;
-      if (data.contactInfo.location) content += `${data.contactInfo.location}\n`;
-      if (data.contactInfo.linkedin) content += `${data.contactInfo.linkedin}\n`;
+      if (data.contact_details.name) content += `${data.contact_details.name}\n`;
+      if (data.contact_details.email) content += `${data.contact_details.email}\n`;
+      if (data.contact_details.phone) content += `${data.contact_details.phone}\n`;
+      if (data.contact_details.location) content += `${data.contact_details.location}\n`;
+      if (data.contact_details.linkedin) content += `${data.contact_details.linkedin}\n`;
       content += '\n';
     }
     
@@ -164,23 +280,6 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
           if (edu.endDate) content += `${edu.endDate}`;
         }
         content += `\n\n`;
-      });
-    }
-    
-    // Add skills
-    if (data.skills && data.skills.length > 0) {
-      content += `Skills\n\n`;
-      content += data.skills.join(', ');
-      content += `\n\n`;
-    }
-    
-    // Add any other sections if present
-    if (data.projects && data.projects.length > 0) {
-      content += `Projects\n\n`;
-      data.projects.forEach(project => {
-        if (project.name) content += `${project.name}\n`;
-        if (project.description) content += `${project.description}\n`;
-        content += '\n';
       });
     }
     
@@ -247,31 +346,13 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
           </Button>
           
           <Button 
-            onClick={() => {
-              // Store the current resume in localStorage and navigate
-              if (resumeText || localResumeText) {
-                const optimizedResumeData = {
-                  title: `Resume Analysis (${new Date().toLocaleDateString()})`,
-                  content: resumeText || localResumeText,
-                  timestamp: Date.now()
-                };
-                
-                localStorage.setItem('pendingOptimizedResume', JSON.stringify(optimizedResumeData));
-                navigate('/resumes');
-              } else {
-                toast({
-                  title: "No resume found",
-                  description: "Please upload or paste your resume first.",
-                  variant: "destructive"
-                });
-              }
-            }}
+            onClick={handleSaveAndEdit}
             variant="outline" 
             size="lg"
             className="flex items-center"
           >
             <Save className="mr-2" />
-            Analyze and Save
+            Save & Edit Resume
           </Button>
         </div>
       </div>

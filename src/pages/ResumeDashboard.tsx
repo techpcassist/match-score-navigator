@@ -21,6 +21,7 @@ interface Resume {
   title: string;
   lastModified: Date;
   content: string;
+  sections?: any[];
 }
 
 const ResumeDashboard = () => {
@@ -84,7 +85,7 @@ const ResumeDashboard = () => {
         console.error('Error processing optimized resume:', error);
       }
     }
-  }, [toast]);
+  }, [toast, resumes.length]);
 
   const handleCreateResume = () => {
     if (!newResumeTitle.trim()) {
@@ -100,7 +101,15 @@ const ResumeDashboard = () => {
       id: `resume-${Date.now()}`,
       title: newResumeTitle,
       lastModified: new Date(),
-      content: '' // Empty content for a new resume
+      content: '', // Empty content for a new resume
+      sections: [
+        {
+          id: `section-${Date.now()}-0`,
+          title: "Summary",
+          content: "",
+          type: "summary"
+        }
+      ]
     };
 
     const updatedResumes = [...resumes, newResume];
