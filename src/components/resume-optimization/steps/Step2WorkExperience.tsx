@@ -39,7 +39,8 @@ export const Step2WorkExperience: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {!hasEntries && aiParsedEntries.length === 0 && (
+        {/* Show message when no entries detected */}
+        {(!hasEntries && aiParsedEntries.length === 0) && (
           <Alert className="mb-6" variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -48,6 +49,7 @@ export const Step2WorkExperience: React.FC = () => {
           </Alert>
         )}
         
+        {/* Show message for AI-parsed entries */}
         {hasEntries && usingAIParsing && (
           <Alert className="mb-6" variant="default">
             <Sparkles className="h-4 w-4" />
@@ -58,6 +60,7 @@ export const Step2WorkExperience: React.FC = () => {
           </Alert>
         )}
         
+        {/* Show message for manually detected entries */}
         {hasEntries && !usingAIParsing && (
           <Alert className="mb-6" variant="default">
             <Info className="h-4 w-4" />
@@ -68,6 +71,7 @@ export const Step2WorkExperience: React.FC = () => {
           </Alert>
         )}
         
+        {/* Show insights from AI analysis if available */}
         {experienceInsights && (
           <Alert className="mb-6" variant="default">
             <Info className="h-4 w-4" />
