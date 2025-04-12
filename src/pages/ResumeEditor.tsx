@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, PlusCircle } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { TabsContent } from '@/components/ui/tabs';
 import { useResumeEditor } from '@/hooks/use-resume-editor';
 import { SectionTabs } from '@/components/resume-editor/SectionTabs';
