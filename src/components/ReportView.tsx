@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from "react";
 import ReportViewMain from "./report/ReportViewMain";
 import ResumeOptimizationHandler from "./report/ResumeOptimizationHandler";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionText }) => {
   const [localResumeText, setLocalResumeText] = useState('');
   const [localJobText, setLocalJobText] = useState('');
+  const isMobile = useIsMobile();
 
   // Use effect to update local state when props change
   useEffect(() => {
@@ -38,6 +40,7 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
           resumeText={resumeText}
           localResumeText={localResumeText}
           onParseResume={handleParseResume}
+          isMobile={isMobile}
         />
       )}
     </ResumeOptimizationHandler>

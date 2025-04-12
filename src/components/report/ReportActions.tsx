@@ -10,12 +10,14 @@ interface ReportActionsProps {
   resumeText: string;
   localResumeText: string;
   onParseResume: () => void;
+  isMobile?: boolean;
 }
 
 export const ReportActions: React.FC<ReportActionsProps> = ({ 
   resumeText, 
   localResumeText, 
-  onParseResume 
+  onParseResume,
+  isMobile = false
 }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -65,12 +67,12 @@ export const ReportActions: React.FC<ReportActionsProps> = ({
   };
 
   return (
-    <div className="flex justify-center mt-8 gap-4">
+    <div className={`flex ${isMobile ? 'flex-col' : 'justify-center'} gap-4 mt-6 md:mt-8`}>
       <Button 
         onClick={onParseResume}
         variant="default" 
-        size="lg"
-        className="flex items-center"
+        size={isMobile ? "default" : "lg"}
+        className="flex items-center justify-center w-full md:w-auto"
         id="optimize-ai-button"
       >
         <Sparkles className="mr-2" />
@@ -80,8 +82,8 @@ export const ReportActions: React.FC<ReportActionsProps> = ({
       <Button 
         onClick={handleSaveAndEdit}
         variant="outline" 
-        size="lg"
-        className="flex items-center"
+        size={isMobile ? "default" : "lg"}
+        className="flex items-center justify-center w-full md:w-auto"
       >
         <Save className="mr-2" />
         Save & Edit Resume

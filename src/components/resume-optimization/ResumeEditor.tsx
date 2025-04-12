@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ResumeEditorProps {
   initialContent: string;
@@ -15,6 +15,7 @@ export const ResumeEditor = ({ initialContent, onChange }: ResumeEditorProps) =>
   const [content, setContent] = useState(initialContent);
   const [sections, setSections] = useState<{[key: string]: string}>({});
   const [activeTab, setActiveTab] = useState<string>('full');
+  const isMobile = useIsMobile();
   
   // Parse the resume into sections when content changes
   useEffect(() => {
@@ -107,30 +108,44 @@ export const ResumeEditor = ({ initialContent, onChange }: ResumeEditorProps) =>
     setSections(parsedSections);
   };
   
+  const renderMobileTabs = () => (
+    <TabsList className="flex flex-wrap gap-1 mb-4">
+      <TabsTrigger value="full" className="flex-1">Full</TabsTrigger>
+      <TabsTrigger value="summary" className="flex-1">Summary</TabsTrigger>
+      <TabsTrigger value="experience" className="flex-1">Work</TabsTrigger>
+      <TabsTrigger value="education" className="flex-1">Education</TabsTrigger>
+      <TabsTrigger value="skills" className="flex-1">Skills</TabsTrigger>
+    </TabsList>
+  );
+  
+  const renderDesktopTabs = () => (
+    <TabsList className="grid grid-cols-7 mb-4">
+      <TabsTrigger value="full">Full Resume</TabsTrigger>
+      <TabsTrigger value="summary">Summary</TabsTrigger>
+      <TabsTrigger value="experience">Experience</TabsTrigger>
+      <TabsTrigger value="education">Education</TabsTrigger>
+      <TabsTrigger value="skills">Skills</TabsTrigger>
+      <TabsTrigger value="certifications">Certifications</TabsTrigger>
+      <TabsTrigger value="projects">Projects</TabsTrigger>
+    </TabsList>
+  );
+  
   return (
     <Card>
       <CardContent className="pt-4">
-        <p className="text-muted-foreground mb-2">
+        <p className="text-muted-foreground mb-2 text-sm md:text-base">
           Edit your optimized resume below. All accepted suggestions have been applied.
         </p>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid grid-cols-7 mb-4">
-            <TabsTrigger value="full">Full Resume</TabsTrigger>
-            <TabsTrigger value="summary">Summary</TabsTrigger>
-            <TabsTrigger value="experience">Experience</TabsTrigger>
-            <TabsTrigger value="education">Education</TabsTrigger>
-            <TabsTrigger value="skills">Skills</TabsTrigger>
-            <TabsTrigger value="certifications">Certifications</TabsTrigger>
-            <TabsTrigger value="projects">Projects</TabsTrigger>
-          </TabsList>
+          {isMobile ? renderMobileTabs() : renderDesktopTabs()}
           
           <TabsContent value="full">
             <Textarea
               value={content}
               onChange={handleFullContentChange}
-              rows={20}
-              className="font-mono resize-none"
+              rows={isMobile ? 15 : 20}
+              className="font-mono resize-none text-sm md:text-base"
             />
           </TabsContent>
           
@@ -142,8 +157,8 @@ export const ResumeEditor = ({ initialContent, onChange }: ResumeEditorProps) =>
                 <Textarea
                   value={sections[section]}
                   onChange={(e) => handleSectionChange(section, e.target.value)}
-                  rows={16}
-                  className="font-mono resize-none"
+                  rows={isMobile ? 12 : 16}
+                  className="font-mono resize-none text-sm md:text-base"
                 />
               </div>
             </TabsContent>

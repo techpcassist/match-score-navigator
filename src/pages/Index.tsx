@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import InputCard from '@/components/InputCard';
 import ReportView from '@/components/ReportView';
 import { extractTextFromFile, uploadResumeFile } from '@/utils/fileProcessor';
@@ -22,7 +24,8 @@ const Index = () => {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [finalProcessedResumeText, setFinalProcessedResumeText] = useState('');
-  const [finalProcessedJobText, setFinalProcessedJobText] = useState(''); // Added this state variable
+  const [finalProcessedJobText, setFinalProcessedJobText] = useState(''); 
+  const isMobile = useIsMobile();
 
   const handleScanClick = () => {
     // Check if we have enough input to analyze
@@ -150,7 +153,7 @@ const Index = () => {
   }, [resumeText, finalProcessedResumeText]);
 
   return (
-    <div className="container mx-auto py-6 max-w-4xl">
+    <div className={`container mx-auto py-4 md:py-6 ${isMobile ? 'px-3' : 'max-w-4xl'}`}>
       <InputCard 
         resumeFile={resumeFile}
         jobDescriptionFile={jobDescriptionFile}

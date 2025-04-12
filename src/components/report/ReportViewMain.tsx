@@ -18,6 +18,7 @@ interface ReportViewMainProps {
   resumeText: string; 
   localResumeText: string;
   onParseResume: () => void;
+  isMobile?: boolean;
 }
 
 export const ReportViewMain: React.FC<ReportViewMainProps> = ({
@@ -26,14 +27,15 @@ export const ReportViewMain: React.FC<ReportViewMainProps> = ({
   userRole,
   resumeText,
   localResumeText,
-  onParseResume
+  onParseResume,
+  isMobile = false
 }) => {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       <ScoreDisplay matchScore={matchScore} />
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">Analysis Report</h2>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight mb-2 md:mb-0">Analysis Report</h2>
         {userRole === "recruiter" && (
           <div className="flex items-center text-sm text-muted-foreground">
             <TrophyIcon className="mr-2 h-4 w-4" />
@@ -46,6 +48,7 @@ export const ReportViewMain: React.FC<ReportViewMainProps> = ({
       <KeywordsSection 
         hardSkills={report.keywords.hard_skills} 
         softSkills={report.keywords.soft_skills} 
+        isMobile={isMobile}
       />
       <AdvancedCriteriaSection criteria={report.advanced_criteria || []} />
       <PerformanceSection performanceIndicators={report.performance_indicators || {
@@ -68,6 +71,7 @@ export const ReportViewMain: React.FC<ReportViewMainProps> = ({
         resumeText={resumeText} 
         localResumeText={localResumeText} 
         onParseResume={onParseResume} 
+        isMobile={isMobile}
       />
     </div>
   );

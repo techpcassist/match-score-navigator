@@ -5,6 +5,7 @@ import { SectionTabs } from './SectionTabs';
 import { SectionControls } from './SectionControls';
 import { SectionEditor } from '@/components/resume-dashboard/SectionEditor';
 import { AIAssistant } from '@/components/resume-dashboard/AIAssistant';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ResumeSection {
   id: string;
@@ -36,8 +37,10 @@ export const EditorMainContent: React.FC<EditorMainContentProps> = ({
   handleAISuggestion,
   sectionTypes
 }) => {
+  const isMobile = useIsMobile();
+  
   return (
-    <div className="flex flex-col gap-4 bg-card p-4 rounded-lg border h-[calc(100vh-180px)] overflow-hidden">
+    <div className={`flex flex-col gap-4 bg-card p-3 md:p-4 rounded-lg border ${isMobile ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-180px)]'} overflow-hidden`}>
       <SectionTabs
         sections={sections}
         currentSection={currentSection}
