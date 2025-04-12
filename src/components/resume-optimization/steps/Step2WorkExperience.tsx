@@ -4,7 +4,7 @@ import { CardHeader, CardContent, CardTitle, CardDescription } from '@/component
 import { WorkExperienceForm } from '../WorkExperienceForm';
 import { WorkExperienceEntry } from '../types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info, AlertCircle } from 'lucide-react';
+import { Info, AlertCircle, Sparkles } from 'lucide-react';
 
 interface Step2WorkExperienceProps {
   entries: WorkExperienceEntry[];
@@ -43,8 +43,18 @@ export const Step2WorkExperience: React.FC<Step2WorkExperienceProps> = ({
           </Alert>
         )}
         
-        {hasEntries && (
-          <Alert className="mb-6">
+        {hasEntries && usingAIParsing && (
+          <Alert className="mb-6" variant="default">
+            <Sparkles className="h-4 w-4" />
+            <AlertDescription>
+              Our AI has detected {entries.length} work experience entries from your resume. 
+              Please review and complete any missing information.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {hasEntries && !usingAIParsing && (
+          <Alert className="mb-6" variant="default">
             <Info className="h-4 w-4" />
             <AlertDescription>
               We've detected {entries.length} work experience entries from your resume. 

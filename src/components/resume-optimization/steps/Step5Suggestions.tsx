@@ -4,7 +4,7 @@ import { CardHeader, CardContent, CardTitle, CardDescription } from '@/component
 import { SuggestionsList } from '../SuggestionsList';
 import { KeywordSuggestion, FormattingSuggestion, SectionSuggestion } from '../types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { BookOpen, Info } from 'lucide-react';
+import { BookOpen, Info, Sparkles } from 'lucide-react';
 
 interface Step5SuggestionsProps {
   keywordSuggestions: KeywordSuggestion[];
@@ -27,6 +27,7 @@ export const Step5Suggestions: React.FC<Step5SuggestionsProps> = ({
   
   const matchScore = analysisReport?.match_score || 0;
   const improvementPotential = analysisReport?.improvement_potential;
+  const hasAIEnhancedSuggestions = !!analysisReport?.improvement_potential;
   
   return (
     <div className="space-y-6">
@@ -37,8 +38,17 @@ export const Step5Suggestions: React.FC<Step5SuggestionsProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {hasAIEnhancedSuggestions && (
+          <Alert className="mb-6" variant="default">
+            <Sparkles className="h-4 w-4" />
+            <AlertDescription>
+              Our AI has analyzed your resume against the job description and generated tailored suggestions to increase your match rate.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {matchScore > 0 && (
-          <Alert className="mb-6">
+          <Alert className="mb-6" variant="default">
             <Info className="h-4 w-4" />
             <AlertDescription>
               <strong>Current match score: {matchScore}%</strong>. 

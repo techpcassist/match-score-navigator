@@ -2,7 +2,26 @@
 import { Education } from '../../types';
 
 // Parse the resume text to extract education entries
-export const parseResumeForEducation = (resumeText: string): Education[] => {
+export const parseResumeForEducation = (resumeText: string, analysisReport?: any): Education[] => {
+  // If we have AI-parsed data from the analysis report, use it first
+  if (analysisReport?.parsed_data?.education && analysisReport.parsed_data.education.length > 0) {
+    console.log("Using AI-parsed education data:", analysisReport.parsed_data.education);
+    
+    // Map the AI parsed data to our Education type
+    return analysisReport.parsed_data.education.map((entry: any, index: number) => ({
+      id: entry.id || `edu-${index}`,
+      degree: entry.degree || '',
+      fieldOfStudy: entry.fieldOfStudy || '',
+      university: entry.university || '',
+      startDate: entry.startDate || '',
+      endDate: entry.endDate || '',
+      country: entry.country || '',
+      state: entry.state || '',
+      customUniversity: false
+    }));
+  }
+  
+  // Fallback to traditional parsing if no AI data is available
   const lines = resumeText.split('\n');
   const entries: Education[] = [];
   let currentEntry: Partial<Education> = {};

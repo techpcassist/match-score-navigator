@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -5,7 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { 
   CheckCircle, 
   ArrowRight, 
-  ArrowLeft 
+  ArrowLeft,
+  Sparkles 
 } from 'lucide-react';
 import { 
   WorkExperienceEntry, 
@@ -23,7 +25,8 @@ import {
   identifyMissingSections,
   extractKeywordSuggestions,
   extractFormatSuggestions,
-  createSectionSuggestions
+  createSectionSuggestions,
+  generateMissingInfo
 } from './utils/resume-parsing';
 
 interface OptimizationPanelProps {
@@ -53,24 +56,33 @@ export const OptimizationPanel = ({
   const [keywordSuggestions, setKeywordSuggestions] = useState<KeywordSuggestion[]>([]);
   const [formatSuggestions, setFormatSuggestions] = useState<FormattingSuggestion[]>([]);
   const [sectionSuggestions, setSectionSuggestions] = useState<SectionSuggestion[]>([]);
+  
+  // Flag to indicate if we're using AI parsing
+  const [usingAIParsing, setUsingAIParsing] = useState(false);
 
   const totalSteps = 6; // Updated to include education step
   
   // Initialize data on component mount
   useEffect(() => {
-    // Parse work experience data
-    const workExperience = parseResumeForWorkExperience(resumeText);
+    // Check if we have AI-parsed data
+    const hasAIWorkExperience = analysisReport?.parsed_data?.work_experience?.length > 0;
+    const hasAIEducation = analysisReport?.parsed_data?.education?.length > 0;
+    
+    setUsingAIParsing(hasAIWorkExperience || hasAIEducation);
+    
+    // Parse work experience data - pass the analysisReport to use AI parsed data if available
+    const workExperience = parseResumeForWorkExperience(resumeText, analysisReport);
     setWorkExperienceEntries(workExperience);
     
-    // Parse education data
-    const education = parseResumeForEducation(resumeText);
+    // Parse education data - pass the analysisReport to use AI parsed data if available
+    const education = parseResumeForEducation(resumeText, analysisReport);
     setEducationEntries(education);
     
     // Identify missing sections
     const missingSectionsList = identifyMissingSections(resumeText, jobDescriptionText, analysisReport);
     setMissingSections(missingSectionsList);
     
-    // Initialize suggestions
+    // Initialize suggestions with AI-enhanced data
     const keywordSugs = extractKeywordSuggestions(analysisReport);
     setKeywordSuggestions(keywordSugs);
     
@@ -144,11 +156,19 @@ export const OptimizationPanel = ({
     <Card className="w-full">
       <div className="px-6 pt-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Resume Optimization</h2>
+          <div className="flex items-center">
+            <h2 className="text-2xl font-bold">Resume Optimization</h2>
+            {usingAIParsing && (
+              <div className="ml-2 bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs flex items-center">
+                <Sparkles className="h-3 w-3 mr-1" />
+                AI Enhanced
+              </div>
+            )}
+          </div>
           <div className="flex items-center">
             <span className="text-sm font-medium mr-2">Progress:</span>
-            <Progress value={progressPercentage} className="w-[100px]" />
-            <span className="text-sm ml-2">{Math.round(progressPercentage)}%</span>
+            <Progress value={(completedSteps.length / totalSteps) * 100} className="w-[100px]" />
+            <span className="text-sm ml-2">{Math.round((completedSteps.length / totalSteps) * 100)}%</span>
           </div>
         </div>
         

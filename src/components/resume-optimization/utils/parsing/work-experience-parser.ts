@@ -2,7 +2,31 @@
 import { WorkExperienceEntry } from '../../types';
 
 // Parse the resume text to extract work experience entries
-export const parseResumeForWorkExperience = (resumeText: string): WorkExperienceEntry[] => {
+export const parseResumeForWorkExperience = (resumeText: string, analysisReport?: any): WorkExperienceEntry[] => {
+  // If we have AI-parsed data from the analysis report, use it first
+  if (analysisReport?.parsed_data?.work_experience && analysisReport.parsed_data.work_experience.length > 0) {
+    console.log("Using AI-parsed work experience data:", analysisReport.parsed_data.work_experience);
+    
+    // Map the AI parsed data to our WorkExperienceEntry type
+    return analysisReport.parsed_data.work_experience.map((entry: any, index: number) => ({
+      id: entry.id || `job-${index}`,
+      company: entry.company || '',
+      title: entry.title || '',
+      startDate: entry.startDate || '',
+      endDate: entry.endDate || '',
+      description: entry.description || '',
+      companyLocation: {
+        country: entry.companyLocation?.country || '',
+        state: entry.companyLocation?.state || '',
+        city: entry.companyLocation?.city || ''
+      },
+      teamName: entry.teamName || '',
+      teamSize: entry.teamSize || 0,
+      projectName: entry.projectName || ''
+    }));
+  }
+  
+  // Fallback to traditional parsing if no AI data is available
   const lines = resumeText.split('\n');
   const entries: WorkExperienceEntry[] = [];
   let currentEntry: Partial<WorkExperienceEntry> = {};

@@ -4,7 +4,7 @@ import { CardHeader, CardContent, CardTitle, CardDescription } from '@/component
 import { EducationForm } from '../EducationForm';
 import { Education } from '../types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info, AlertCircle } from 'lucide-react';
+import { Info, AlertCircle, Sparkles } from 'lucide-react';
 
 interface Step3EducationProps {
   entries: Education[];
@@ -20,7 +20,9 @@ export const Step3Education: React.FC<Step3EducationProps> = ({
   // Extract any relevant insights from the analysis report
   const educationInsights = analysisReport?.section_analysis?.education || '';
   
-  // Check if entries were found
+  // Check if entries came from AI parsing
+  const aiParsedEntries = analysisReport?.parsed_data?.education || [];
+  const usingAIParsing = aiParsedEntries.length > 0;
   const hasEntries = entries.length > 0;
   
   return (
@@ -41,8 +43,18 @@ export const Step3Education: React.FC<Step3EducationProps> = ({
           </Alert>
         )}
         
-        {hasEntries && (
-          <Alert className="mb-6">
+        {hasEntries && usingAIParsing && (
+          <Alert className="mb-6" variant="default">
+            <Sparkles className="h-4 w-4" />
+            <AlertDescription>
+              Our AI has detected {entries.length} education entries from your resume. 
+              Please review and complete any missing information.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {hasEntries && !usingAIParsing && (
+          <Alert className="mb-6" variant="default">
             <Info className="h-4 w-4" />
             <AlertDescription>
               We've detected {entries.length} education entries from your resume. 
