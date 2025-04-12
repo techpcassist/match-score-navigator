@@ -2,7 +2,7 @@
 import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Experience } from '../types';
+import { Experience } from '../../types';
 
 interface ExperienceDetailsSectionProps {
   experience: Experience;
