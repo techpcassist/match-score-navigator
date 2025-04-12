@@ -52,7 +52,7 @@ export const Step3Education: React.FC<Step3EducationProps> = ({
         )}
         
         {educationInsights && (
-          <Alert className="mb-6" variant="outline">
+          <Alert className="mb-6" variant="default">
             <Info className="h-4 w-4" />
             <AlertDescription>
               <strong>AI Analysis:</strong> {educationInsights}

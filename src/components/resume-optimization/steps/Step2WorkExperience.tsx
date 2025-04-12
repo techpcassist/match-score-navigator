@@ -54,7 +54,7 @@ export const Step2WorkExperience: React.FC<Step2WorkExperienceProps> = ({
         )}
         
         {experienceInsights && (
-          <Alert className="mb-6" variant="outline">
+          <Alert className="mb-6" variant="default">
             <Info className="h-4 w-4" />
             <AlertDescription>
               <strong>AI Analysis:</strong> {experienceInsights}

@@ -48,7 +48,7 @@ export const Step5Suggestions: React.FC<Step5SuggestionsProps> = ({
         )}
         
         {improvementPotential && (
-          <Alert className="mb-6" variant="outline">
+          <Alert className="mb-6" variant="default">
             <BookOpen className="h-4 w-4" />
             <AlertDescription className="space-y-2">
               <p><strong>Keyword optimization potential:</strong> {improvementPotential.keyword_optimization?.level || 'unknown'}</p>
