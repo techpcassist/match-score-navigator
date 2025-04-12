@@ -29,6 +29,7 @@ interface OptimizationContextType {
   formatSuggestions: any[];
   sectionSuggestions: any[];
   usingAIParsing: boolean;
+  analysisReport: any; // Add the analysisReport property
   
   // Actions
   setCurrentStep: (step: number) => void;
@@ -177,6 +178,7 @@ export const OptimizationProvider: React.FC<OptimizationProviderProps> = ({
     formatSuggestions,
     sectionSuggestions,
     usingAIParsing,
+    analysisReport, // Add the analysisReport to the context value
     
     setCurrentStep,
     setOptimizedResume,
