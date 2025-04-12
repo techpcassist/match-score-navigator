@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { WorkExperienceForm } from '../WorkExperienceForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -11,16 +11,25 @@ export const Step2WorkExperience: React.FC = () => {
     workExperienceEntries, 
     handleWorkExperienceUpdate,
     usingAIParsing,
-    analysisReport 
+    analysisReport,
+    setWorkExperienceEntries
   } = useOptimizationContext();
   
   // Extract any relevant insights from the analysis report
   const experienceInsights = analysisReport?.section_analysis?.experience || '';
   
-  // Check if entries came from AI parsing or manual parsing
+  // Check if entries came from AI parsing
   const aiParsedEntries = analysisReport?.parsed_data?.work_experience || [];
   const hasEntries = workExperienceEntries && workExperienceEntries.length > 0;
   
+  // Effect to ensure we have work experience entries if AI parsed some
+  useEffect(() => {
+    // If we have AI parsed entries but no entries in our state, use the AI parsed ones
+    if (aiParsedEntries.length > 0 && (!workExperienceEntries || workExperienceEntries.length === 0)) {
+      setWorkExperienceEntries(aiParsedEntries);
+    }
+  }, [aiParsedEntries, workExperienceEntries, setWorkExperienceEntries]);
+
   return (
     <div className="space-y-6">
       <CardHeader>
@@ -30,7 +39,7 @@ export const Step2WorkExperience: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {!hasEntries && !aiParsedEntries.length && (
+        {!hasEntries && aiParsedEntries.length === 0 && (
           <Alert className="mb-6" variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -69,7 +78,7 @@ export const Step2WorkExperience: React.FC = () => {
         )}
         
         <WorkExperienceForm 
-          entries={workExperienceEntries}
+          entries={workExperienceEntries || []}
           onChange={handleWorkExperienceUpdate}
         />
       </CardContent>
