@@ -4,10 +4,11 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Plus, FileText } from 'lucide-react';
+import { Sparkles, Plus, FileText, Wand2 } from 'lucide-react';
 import { generateJobDescription, generateJobDutySuggestion } from '../utils/description-generator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { callGenerativeAI } from '../utils/ai-helper';
 
 interface JobDetailsFieldsProps {
   id: string;
@@ -41,16 +42,54 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
   const [suggestedDuty, setSuggestedDuty] = useState('');
   const [isEnhancingDuty, setIsEnhancingDuty] = useState(false);
   const [showAddDuty, setShowAddDuty] = useState(false);
+  const [isEnhancingText, setIsEnhancingText] = useState(false);
   
-  const handleGenerateDutySuggestion = () => {
+  const handleGenerateDutySuggestion = async () => {
     if (!title) return;
     
     setIsEnhancingDuty(true);
-    setTimeout(() => {
+    try {
+      // Try to use AI-generated duty if available
+      const aiSuggestion = await callGenerativeAI(`Generate a specific job duty or achievement for a ${title} position that includes a measurable outcome or metric. The duty should be 1-2 sentences maximum and start with an action verb.`);
+      
+      if (aiSuggestion) {
+        setSuggestedDuty(aiSuggestion);
+      } else {
+        // Fallback to pre-defined suggestions if AI call fails
+        const duty = generateJobDutySuggestion(title);
+        setSuggestedDuty(duty);
+      }
+    } catch (error) {
+      console.error("Error generating duty suggestion:", error);
+      // Fallback to pre-defined suggestions
       const duty = generateJobDutySuggestion(title);
       setSuggestedDuty(duty);
+    } finally {
       setIsEnhancingDuty(false);
-    }, 800);
+    }
+  };
+  
+  const handleEnhanceDescription = async () => {
+    if (!description || !title) return;
+    
+    setIsEnhancingText(true);
+    try {
+      const prompt = `Enhance the following job description for a ${title} position to be more compelling, professional, and include specific achievements with metrics where possible. Maintain the original meaning but make it more impressive for a resume:
+      
+      "${description}"
+      
+      Please use bullet points (•) for each point and ensure all bullet points start with powerful action verbs. Limit to 4-6 bullet points total.`;
+      
+      const enhancedText = await callGenerativeAI(prompt);
+      
+      if (enhancedText) {
+        onDescriptionChange(enhancedText);
+      }
+    } catch (error) {
+      console.error("Error enhancing description:", error);
+    } finally {
+      setIsEnhancingText(false);
+    }
   };
   
   const handleAddDuty = () => {
@@ -188,6 +227,26 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
               </Tooltip>
             </TooltipProvider>
             
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEnhanceDescription}
+                    disabled={isEnhancingText || !description || !title}
+                    className="h-9"
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    {isEnhancingText ? 'Enhancing...' : 'Enhance Text'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Improve your current description with AI</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
             <Popover open={showAddDuty} onOpenChange={setShowAddDuty}>
               <PopoverTrigger asChild>
                 <Button
@@ -232,8 +291,9 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
       </div>
       
       <p className="text-xs text-muted-foreground">
-        Pro tip: Add job details above and use "Generate Full" for a complete description or "Suggest Duty" for specific responsibilities.
+        Pro tip: Add job details above and use "Generate Full" for a complete description, "Suggest Duty" for specific responsibilities, or "Enhance Text" to improve existing content.
       </p>
     </div>
   );
 };
+

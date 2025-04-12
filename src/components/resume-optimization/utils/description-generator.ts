@@ -1,5 +1,48 @@
 
-export const generateJobDescription = (
+import { callGenerativeAI } from './ai-helper';
+
+export const generateJobDescription = async (
+  title: string,
+  teamName?: string,
+  teamSize?: number,
+  projectName?: string
+): Promise<string> => {
+  try {
+    // First try to generate using AI
+    let prompt = `Generate a professional job description for a ${title} position`;
+    
+    if (teamName) {
+      prompt += ` in the ${teamName} team`;
+    }
+    
+    if (teamSize && teamSize > 0) {
+      prompt += ` of ${teamSize} members`;
+    }
+    
+    if (projectName) {
+      prompt += ` working on the ${projectName} project`;
+    }
+    
+    prompt += `. Include 3-4 bullet points with specific, quantifiable achievements and metrics (e.g., increased efficiency by 30%). Format with bullet points (•) at the start of each accomplishment. Limit to 4-6 bullet points total.`;
+    
+    const aiResponse = await callGenerativeAI(prompt);
+    
+    if (aiResponse) {
+      return aiResponse;
+    }
+    
+    // If AI generation fails, fall back to pre-defined templates
+    console.log("AI generation failed, using fallback templates");
+    return getFallbackDescription(title, teamName, teamSize, projectName);
+  } catch (error) {
+    console.error("Error generating job description:", error);
+    // Fallback to pre-defined templates on error
+    return getFallbackDescription(title, teamName, teamSize, projectName);
+  }
+};
+
+// Fallback function that uses pre-defined templates
+const getFallbackDescription = (
   title: string,
   teamName?: string,
   teamSize?: number,
@@ -52,9 +95,31 @@ export const generateJobDescription = (
 };
 
 // Generate a suggestion for a specific job duty based on job title
-export const generateJobDutySuggestion = (
+export const generateJobDutySuggestion = async (
   title: string
-): string => {
+): Promise<string> => {
+  try {
+    // Try to generate using AI first
+    const prompt = `Generate a single specific job duty or achievement for a ${title} position that includes a measurable outcome or metric. The duty should be 1-2 sentences maximum and start with an action verb.`;
+    
+    const aiResponse = await callGenerativeAI(prompt);
+    
+    if (aiResponse) {
+      return aiResponse;
+    }
+    
+    // If AI generation fails, fall back to pre-defined duties
+    console.log("AI generation failed, using fallback duties");
+    return getFallbackDuty(title);
+  } catch (error) {
+    console.error("Error generating duty suggestion:", error);
+    // Fallback to pre-defined duties on error
+    return getFallbackDuty(title);
+  }
+};
+
+// Fallback function that uses pre-defined duties
+const getFallbackDuty = (title: string): string => {
   const titleLower = title.toLowerCase();
   const duties: Record<string, string[]> = {
     'software engineer': [
@@ -110,3 +175,4 @@ export const generateJobDutySuggestion = (
   const options = duties[bestMatch] || duties['software engineer'];
   return options[Math.floor(Math.random() * options.length)];
 };
+

@@ -26,15 +26,23 @@ export const WorkExperienceEntryComponent: React.FC<WorkExperienceEntryProps> = 
   onUpdate,
   onRemove
 }) => {
-  const handleGenerateDescription = () => {
-    const description = generateJobDescription(
-      entry.title || '',
-      entry.teamName,
-      entry.teamSize,
-      entry.projectName
-    );
+  const handleGenerateDescription = async () => {
+    // Update the state first to show loading indicator
+    onUpdate('description', 'Generating...');
     
-    onUpdate('description', description);
+    try {
+      const description = await generateJobDescription(
+        entry.title || '',
+        entry.teamName,
+        entry.teamSize,
+        entry.projectName
+      );
+      
+      onUpdate('description', description);
+    } catch (error) {
+      console.error("Error generating description:", error);
+      onUpdate('description', "Error generating description. Please try again.");
+    }
   };
 
   return (
@@ -91,3 +99,4 @@ export const WorkExperienceEntryComponent: React.FC<WorkExperienceEntryProps> = 
     </Card>
   );
 };
+
