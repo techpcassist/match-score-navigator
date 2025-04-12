@@ -48,36 +48,73 @@ serve(async (req) => {
       ],
     });
 
-    // Construct the prompt for the parsing task
+    // Construct the prompt for the parsing task using the detailed instructions
     const prompt = `
-    Parse the following resume text into a structured JSON object. Extract information for the following categories and fields precisely as listed below. If information for a field is not found, represent it as null or an empty string/array.
+    Parse the following resume text STRICTLY based on its content into a structured JSON object. Do NOT invent information or assume details not present. Your primary task is accurate extraction.
+
+    1. Identify Sections: Locate standard resume sections like 'Contact Information', 'Summary'/'Objective', 'Skills', 'Work Experience'/'Employment History'/'Professional Experience', 'Education', 'Certifications', 'Projects'.
     
-    * summary (string): Generate a concise 3-5 line summary based only on the overall content of the resume, highlighting key experiences, skills, and projects mentioned.
-    * experiences (array of objects): For each distinct job/role identified:
-      * company_name (string)
-      * state (string - geographical state/region)
-      * country (string)
-      * start_date (string - attempt MM/YYYY format, state if unclear)
-      * end_date (string - attempt MM/YYYY format or 'Present'/'Till Date' if current, state if unclear)
-      * job_title (string)
-      * responsibilities_text (string - capture the full description block for this role)
-      * skills_tools_used (string - list skills/tools specifically mentioned within this role's description, comma-separated)
-    * education (array of objects): For each distinct educational qualification or certification identified:
-      * course_certification_name (string)
-      * institute_name (string)
-      * university_name (string - if distinct from institute)
-      * state (string - geographical state/region)
-      * country (string)
-      * is_certification (boolean - infer if true/false)
-      * certificate_authority (string - if certification, extract authority)
-      * certificate_number (string - if certification, extract number)
-      * validity (string - if certification, extract validity/expiry info)
-    * contact_details (object):
-      * full_name (string)
-      * email (string)
-      * phone (string)
-      * whatsapp (string - attempt extraction if distinct from phone)
-      * linkedin (string - URL or ID)
+    2. Parse Contact Details: Extract full_name, email, phone, whatsapp? (if distinct), linkedin? (URL/ID) into a contact_details object.
+    
+    3. Generate Summary: Create a summary (string): Generate a concise 3-5 line summary based ONLY on the actual content and key terms found throughout the resume.
+    
+    4. Parse Skills: Extract skills listed in a dedicated 'Skills' section into a skills array (array of strings).
+    
+    5. Parse Work Experience (CRITICAL DETAIL):
+       - Segment Entries: Carefully identify distinct job entries within the 'Work Experience' section. Entries might be separated by multiple line breaks, horizontal rules, or patterns like COMPANY, CITY, STATE START_DATE to END_DATE. Pay attention to both vertical and horizontal layouts.
+       - Extract for EACH Entry:
+         - Extract company_name (string).
+         - Extract location: state (string), country (string).
+         - Extract start_date and end_date (strings). Attempt to standardize to MM/YYYY or Month YYYY. Identify 'Present'/'Till Date' for current job.
+         - Locate job_title (string): Search for the job title associated with this company/date block. It is typically located directly above the company name, immediately following the date range on the same line, or as the first line of the descriptive text for that role. If no specific job title is clearly associated with this entry in the text, return null for this field.
+         - Extract responsibilities_text (string): Capture the complete block of text (paragraphs or bullet points) describing roles and responsibilities specifically associated with this company/title/date entry.
+         - Extract skills_tools_used (string or array): Identify and list skills or tools mentioned explicitly within the responsibilities_text for this specific job. If none are mentioned in this block, return null or an empty array.
+       - Output Structure: Collate these into an array of objects under the experiences key. Ensure the order reflects the resume's chronology (usually reverse-chronological).
+    
+    6. Parse Education & Certifications:
+       - Segment into distinct entries.
+       - For each entry, extract course_certification_name, institute_name, university_name?, state, country, and attempt to infer is_certification (boolean).
+       - If is_certification is true, attempt to extract certificate_authority?, certificate_number?, validity?. Return null for fields not found.
+       - Collate into an education array.
+    
+    7. Handle Missing Information: If any field within an entry cannot be reliably found in the text associated with that specific entry, return null for that specific field. Do not guess, infer widely, or pull information from unrelated parts of the resume. Your output must strictly reflect the input text structure and content.
+    
+    8. Output Format: Return ONLY the structured JSON object containing the extracted data (summary, experiences, education, contact_details, skills). Do not include any explanations, apologies, or introductory text before or after the JSON.
+
+    Example output format:
+    {
+      "summary": "...",
+      "experiences": [
+        {
+          "company_name": "COMPANY A",
+          "state": "CA",
+          "country": "USA",
+          "start_date": "JUNE 2019",
+          "end_date": "PRESENT",
+          "job_title": "Software Engineer",
+          "responsibilities_text": "...",
+          "skills_tools_used": ["JavaScript", "React"]
+        }
+      ],
+      "education": [
+        {
+          "course_certification_name": "Bachelor of Science in Computer Science",
+          "institute_name": "University of California",
+          "university_name": null,
+          "state": "CA",
+          "country": "USA",
+          "is_certification": false
+        }
+      ],
+      "contact_details": {
+        "full_name": "John Doe",
+        "email": "john.doe@example.com",
+        "phone": "123-456-7890",
+        "whatsapp": null,
+        "linkedin": "linkedin.com/in/johndoe"
+      },
+      "skills": ["JavaScript", "React", "Node.js"]
+    }
     
     RESUME TEXT:
     ${resume_text}
