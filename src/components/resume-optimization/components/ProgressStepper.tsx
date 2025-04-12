@@ -1,35 +1,63 @@
 
 import React from 'react';
-import { CheckCircle } from 'lucide-react';
 import { useOptimizationContext } from '../context/OptimizationContext';
 
-export const ProgressStepper: React.FC = () => {
+interface ProgressStepperProps {
+  isMobile?: boolean;
+}
+
+export const ProgressStepper: React.FC<ProgressStepperProps> = ({ isMobile }) => {
   const { 
     currentStep, 
-    completedSteps, 
-    setCurrentStep 
+    completedSteps
   } = useOptimizationContext();
   
-  const totalSteps = 6; // Total number of steps in the optimization process
-
+  const totalSteps = 6; // Total number of steps
+  
+  // Generate array of step numbers
+  const steps = Array.from({ length: totalSteps }, (_, i) => i + 1);
+  
   return (
-    <div className="flex items-center space-x-2 mb-6">
-      {Array.from({length: totalSteps}, (_, i) => i + 1).map(step => (
-        <div 
-          key={step} 
-          className={`flex items-center justify-center h-8 w-8 rounded-full text-sm font-medium ${
-            completedSteps.includes(step) 
-              ? 'bg-green-100 text-green-600 border border-green-500' 
-              : currentStep === step 
-                ? 'bg-blue-100 text-blue-600 border border-blue-500' 
-                : 'bg-gray-100 text-gray-500 border border-gray-300'
-          }`}
-          onClick={() => completedSteps.includes(step) || currentStep >= step ? setCurrentStep(step) : null}
-          style={{ cursor: completedSteps.includes(step) || currentStep >= step ? 'pointer' : 'default' }}
-        >
-          {completedSteps.includes(step) ? <CheckCircle className="h-4 w-4" /> : step}
+    <div className={`${isMobile ? 'py-3' : 'py-6'} px-4`}>
+      <div className="flex justify-between">
+        {steps.map((step) => (
+          <div key={step} className="flex flex-col items-center">
+            <div 
+              className={`
+                flex items-center justify-center
+                h-8 w-8 rounded-full 
+                ${currentStep === step 
+                  ? 'bg-primary text-primary-foreground' 
+                  : completedSteps.includes(step)
+                    ? 'bg-green-500 text-white'
+                    : 'bg-muted text-muted-foreground'
+                }
+              `}
+            >
+              {step}
+            </div>
+            {!isMobile && (
+              <span className="mt-2 text-xs">
+                Step {step}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+      {/* Progress Line */}
+      <div className="relative mt-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="h-0.5 w-full bg-muted"></div>
         </div>
-      ))}
+        <div 
+          className="absolute inset-0 flex items-center" 
+          style={{ 
+            width: `${(((currentStep - 1) / (totalSteps - 1)) * 100)}%` 
+          }}
+        >
+          <div className="h-0.5 w-full bg-primary"></div>
+        </div>
+      </div>
     </div>
   );
 };

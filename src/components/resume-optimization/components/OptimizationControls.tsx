@@ -7,9 +7,14 @@ import { useOptimizationContext } from '../context/OptimizationContext';
 interface OptimizationControlsProps {
   onClose: () => void;
   onFinalize: () => void;
+  isMobile?: boolean;
 }
 
-export const OptimizationControls: React.FC<OptimizationControlsProps> = ({ onClose, onFinalize }) => {
+export const OptimizationControls: React.FC<OptimizationControlsProps> = ({ 
+  onClose, 
+  onFinalize,
+  isMobile 
+}) => {
   const { 
     currentStep, 
     setCurrentStep, 
@@ -31,10 +36,11 @@ export const OptimizationControls: React.FC<OptimizationControlsProps> = ({ onCl
   };
 
   return (
-    <div className="p-6 flex justify-between">
+    <div className={`p-${isMobile ? '4' : '6'} flex justify-between`}>
       <Button 
         variant="outline" 
         onClick={currentStep === 1 ? onClose : handlePreviousStep}
+        size={isMobile ? "sm" : "default"}
       >
         {currentStep === 1 ? 'Cancel' : (
           <>
@@ -45,6 +51,7 @@ export const OptimizationControls: React.FC<OptimizationControlsProps> = ({ onCl
       </Button>
       <Button 
         onClick={currentStep === totalSteps ? onFinalize : handleNextStep}
+        size={isMobile ? "sm" : "default"}
       >
         {currentStep === totalSteps ? 'Finalize Resume' : (
           <>
