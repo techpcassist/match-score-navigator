@@ -50,3 +50,63 @@ export const generateJobDescription = (
   const options = descriptions[bestMatch] || descriptions['software engineer'];
   return options[Math.floor(Math.random() * options.length)];
 };
+
+// Generate a suggestion for a specific job duty based on job title
+export const generateJobDutySuggestion = (
+  title: string
+): string => {
+  const titleLower = title.toLowerCase();
+  const duties: Record<string, string[]> = {
+    'software engineer': [
+      "Implemented responsive UI components using React that improved user engagement by 35%",
+      "Optimized database queries that reduced page load times by 45%",
+      "Collaborated with UX designers to implement design systems that ensured consistent user experience",
+      "Developed microservices architecture that improved system scalability by 60%",
+      "Implemented automated testing frameworks that increased code coverage by 30%"
+    ],
+    'product manager': [
+      "Created detailed product roadmaps that aligned with company objectives and customer needs",
+      "Conducted user interviews that identified 5 key pain points in the existing product",
+      "Prioritized backlog items based on business impact and development effort",
+      "Led cross-functional meetings to align engineering, design, and marketing teams",
+      "Analyzed user metrics to identify feature opportunities that increased retention by 25%"
+    ],
+    'data scientist': [
+      "Built predictive models that forecasted customer churn with 85% accuracy",
+      "Developed recommendation algorithms that increased average order value by 28%",
+      "Created data visualization dashboards that improved decision-making for executives",
+      "Performed A/B testing that optimized conversion rates by 15%",
+      "Developed NLP models that automated customer support ticket classification with 90% accuracy"
+    ],
+    'marketing': [
+      "Designed email marketing campaigns that achieved 35% open rates and 12% conversion",
+      "Created content marketing strategy that increased organic traffic by 50%",
+      "Managed social media campaigns that grew follower base by 10,000 in 6 months",
+      "Conducted market research that identified 3 new customer segments",
+      "Optimized ad spend allocation that reduced cost per acquisition by 30%"
+    ],
+    'project manager': [
+      "Managed resource allocation that kept project 15% under budget",
+      "Created project timelines and milestones that ensured on-time delivery",
+      "Implemented risk management strategies that prevented potential delays",
+      "Facilitated daily standups that improved team communication and productivity",
+      "Maintained detailed documentation that streamlined knowledge transfer between teams"
+    ]
+  };
+
+  let bestMatch = 'software engineer'; // default
+  let highestMatchScore = 0;
+  
+  for (const key in duties) {
+    if (titleLower.includes(key)) {
+      const matchScore = key.length;
+      if (matchScore > highestMatchScore) {
+        highestMatchScore = matchScore;
+        bestMatch = key;
+      }
+    }
+  }
+
+  const options = duties[bestMatch] || duties['software engineer'];
+  return options[Math.floor(Math.random() * options.length)];
+};

@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Sparkles } from 'lucide-react';
-import { generateJobDescription } from '../utils/description-generator';
+import { Sparkles, Plus, FileText } from 'lucide-react';
+import { generateJobDescription, generateJobDutySuggestion } from '../utils/description-generator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface JobDetailsFieldsProps {
   id: string;
@@ -36,6 +38,72 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
   onDescriptionChange,
   onGenerateDescription
 }) => {
+  const [suggestedDuty, setSuggestedDuty] = useState('');
+  const [isEnhancingDuty, setIsEnhancingDuty] = useState(false);
+  const [showAddDuty, setShowAddDuty] = useState(false);
+  
+  const handleGenerateDutySuggestion = () => {
+    if (!title) return;
+    
+    setIsEnhancingDuty(true);
+    setTimeout(() => {
+      const duty = generateJobDutySuggestion(title);
+      setSuggestedDuty(duty);
+      setIsEnhancingDuty(false);
+    }, 800);
+  };
+  
+  const handleAddDuty = () => {
+    if (!suggestedDuty) return;
+    
+    // Add the suggested duty to the current description
+    const updatedDescription = description 
+      ? `${description}\n• ${suggestedDuty}` 
+      : `• ${suggestedDuty}`;
+      
+    onDescriptionChange(updatedDescription);
+    setSuggestedDuty(''); // Clear the suggestion after adding
+  };
+  
+  const handleAddCustomDuty = (customDuty: string) => {
+    if (!customDuty) return;
+    
+    // Add the custom duty to the current description
+    const updatedDescription = description 
+      ? `${description}\n• ${customDuty}` 
+      : `• ${customDuty}`;
+      
+    onDescriptionChange(updatedDescription);
+    setShowAddDuty(false); // Close the popover after adding
+  };
+  
+  // Create a simple form for adding custom duties
+  const CustomDutyForm = () => {
+    const [customDuty, setCustomDuty] = useState('');
+    
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={`${id}-custom-duty`}>Add Custom Duty</Label>
+        <Textarea
+          id={`${id}-custom-duty`}
+          value={customDuty}
+          onChange={(e) => setCustomDuty(e.target.value)}
+          placeholder="Describe a specific duty or achievement..."
+          className="min-h-[80px]"
+        />
+        <div className="flex justify-end">
+          <Button 
+            size="sm" 
+            onClick={() => handleAddCustomDuty(customDuty)}
+            disabled={!customDuty}
+          >
+            Add Duty
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-2">
       <Label>Job Details (for AI-generated description)</Label>
@@ -67,30 +135,104 @@ export const JobDetailsFields: React.FC<JobDetailsFieldsProps> = ({
         </div>
       </div>
       
-      <div className="flex items-end gap-2">
-        <div className="flex-grow">
-          <Label htmlFor={`${id}-description`}>Description & Achievements</Label>
-          <Textarea
-            id={`${id}-description`}
-            value={description || ''}
-            onChange={(e) => onDescriptionChange(e.target.value)}
-            placeholder="Include your responsibilities and quantifiable achievements"
-            rows={5}
-          />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-end gap-2">
+          <div className="flex-grow">
+            <Label htmlFor={`${id}-description`}>Description & Achievements</Label>
+            <Textarea
+              id={`${id}-description`}
+              value={description || ''}
+              onChange={(e) => onDescriptionChange(e.target.value)}
+              placeholder="Include your responsibilities and quantifiable achievements"
+              rows={5}
+            />
+          </div>
+          <div className="flex flex-col gap-2 mb-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onGenerateDescription}
+                    disabled={isGenerating || !title}
+                    className="h-9"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {isGenerating ? 'Generating...' : 'Generate Full'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Generate a complete job description</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateDutySuggestion}
+                    disabled={isEnhancingDuty || !title}
+                    className="h-9"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {isEnhancingDuty ? 'Suggesting...' : 'Suggest Duty'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Get a suggestion for a specific duty or achievement</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <Popover open={showAddDuty} onOpenChange={setShowAddDuty}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Custom
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <CustomDutyForm />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onGenerateDescription}
-          disabled={isGenerating || !title}
-          className="mb-1 h-9"
-        >
-          <Sparkles className="h-4 w-4 mr-2" />
-          {isGenerating ? 'Generating...' : 'Generate'}
-        </Button>
+        
+        {/* Suggestion display area */}
+        {suggestedDuty && (
+          <div className="bg-muted p-3 rounded-md mt-2">
+            <p className="text-sm font-medium mb-2">Suggested Job Duty:</p>
+            <p className="text-sm italic mb-2">{suggestedDuty}</p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSuggestedDuty('')}
+              >
+                Dismiss
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleAddDuty}
+              >
+                Add to Description
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
+      
       <p className="text-xs text-muted-foreground">
-        Pro tip: Add job details above and click "Generate" to create an AI-powered job description with achievements.
+        Pro tip: Add job details above and use "Generate Full" for a complete description or "Suggest Duty" for specific responsibilities.
       </p>
     </div>
   );
