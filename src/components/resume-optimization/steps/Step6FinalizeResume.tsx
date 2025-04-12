@@ -6,16 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import { useToast } from '@/components/ui/use-toast';
+import { useOptimizationContext } from '../context/OptimizationContext';
 
-interface Step6FinalizeResumeProps {
-  initialContent: string;
-  onChange: (content: string) => void;
-}
-
-export const Step6FinalizeResume: React.FC<Step6FinalizeResumeProps> = ({ 
-  initialContent, 
-  onChange 
-}) => {
+export const Step6FinalizeResume: React.FC = () => {
+  const { optimizedResume, setOptimizedResume } = useOptimizationContext();
   const resumeContentRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -97,8 +91,8 @@ export const Step6FinalizeResume: React.FC<Step6FinalizeResumeProps> = ({
         </div>
         <div ref={resumeContentRef}>
           <ResumeEditor 
-            initialContent={initialContent}
-            onChange={onChange}
+            initialContent={optimizedResume}
+            onChange={setOptimizedResume}
           />
         </div>
       </CardContent>

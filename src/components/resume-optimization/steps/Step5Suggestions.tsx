@@ -2,28 +2,22 @@
 import React from 'react';
 import { CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { SuggestionsList } from '../SuggestionsList';
-import { KeywordSuggestion, FormattingSuggestion, SectionSuggestion } from '../types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BookOpen, Info, Sparkles } from 'lucide-react';
+import { useOptimizationContext } from '../context/OptimizationContext';
 
-interface Step5SuggestionsProps {
-  keywordSuggestions: KeywordSuggestion[];
-  formatSuggestions: FormattingSuggestion[];
-  sectionSuggestions: SectionSuggestion[];
-  onSuggestionAction: (id: string, action: 'accept' | 'edit' | 'ignore') => void;
-  analysisReport?: any;
-}
-
-export const Step5Suggestions: React.FC<Step5SuggestionsProps> = ({ 
-  keywordSuggestions,
-  formatSuggestions,
-  sectionSuggestions,
-  onSuggestionAction,
-  analysisReport
-}) => {
+export const Step5Suggestions: React.FC = () => {
+  const { 
+    keywordSuggestions,
+    formatSuggestions,
+    sectionSuggestions,
+    handleSuggestionAction,
+    analysisReport
+  } = useOptimizationContext();
+  
   const hasSuggestions = keywordSuggestions.length > 0 || 
-                         formatSuggestions.length > 0 || 
-                         sectionSuggestions.length > 0;
+                        formatSuggestions.length > 0 || 
+                        sectionSuggestions.length > 0;
   
   const matchScore = analysisReport?.match_score || 0;
   const improvementPotential = analysisReport?.improvement_potential;
@@ -83,7 +77,7 @@ export const Step5Suggestions: React.FC<Step5SuggestionsProps> = ({
             keywordSuggestions={keywordSuggestions}
             formatSuggestions={formatSuggestions}
             sectionSuggestions={sectionSuggestions}
-            onSuggestionAction={onSuggestionAction}
+            onSuggestionAction={handleSuggestionAction}
           />
         )}
       </CardContent>

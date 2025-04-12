@@ -2,28 +2,24 @@
 import React from 'react';
 import { CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { EducationForm } from '../EducationForm';
-import { Education } from '../types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info, AlertCircle, Sparkles } from 'lucide-react';
+import { useOptimizationContext } from '../context/OptimizationContext';
 
-interface Step3EducationProps {
-  entries: Education[];
-  onChange: (entries: Education[]) => void;
-  analysisReport?: any;
-}
-
-export const Step3Education: React.FC<Step3EducationProps> = ({ 
-  entries, 
-  onChange,
-  analysisReport
-}) => {
+export const Step3Education: React.FC = () => {
+  const { 
+    educationEntries, 
+    handleEducationUpdate,
+    usingAIParsing,
+    analysisReport 
+  } = useOptimizationContext();
+  
   // Extract any relevant insights from the analysis report
   const educationInsights = analysisReport?.section_analysis?.education || '';
   
   // Check if entries came from AI parsing
   const aiParsedEntries = analysisReport?.parsed_data?.education || [];
-  const usingAIParsing = aiParsedEntries.length > 0;
-  const hasEntries = entries.length > 0;
+  const hasEntries = educationEntries.length > 0;
   
   return (
     <div className="space-y-6">
@@ -47,7 +43,7 @@ export const Step3Education: React.FC<Step3EducationProps> = ({
           <Alert className="mb-6" variant="default">
             <Sparkles className="h-4 w-4" />
             <AlertDescription>
-              Our AI has detected {entries.length} education entries from your resume. 
+              Our AI has detected {educationEntries.length} education entries from your resume. 
               Please review and complete any missing information.
             </AlertDescription>
           </Alert>
@@ -57,7 +53,7 @@ export const Step3Education: React.FC<Step3EducationProps> = ({
           <Alert className="mb-6" variant="default">
             <Info className="h-4 w-4" />
             <AlertDescription>
-              We've detected {entries.length} education entries from your resume. 
+              We've detected {educationEntries.length} education entries from your resume. 
               Please verify the information and complete any missing fields.
             </AlertDescription>
           </Alert>
@@ -73,8 +69,8 @@ export const Step3Education: React.FC<Step3EducationProps> = ({
         )}
         
         <EducationForm
-          entries={entries}
-          onChange={onChange}
+          entries={educationEntries}
+          onChange={handleEducationUpdate}
         />
       </CardContent>
     </div>

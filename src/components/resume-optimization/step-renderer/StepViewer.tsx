@@ -1,19 +1,16 @@
 
 import React, { useEffect } from 'react';
-import { renderStep, StepProps } from './index';
 import { useToast } from '@/components/ui/use-toast';
+import { Step1MissingSections } from '../steps/Step1MissingSections';
+import { Step2WorkExperience } from '../steps/Step2WorkExperience';
+import { Step3Education } from '../steps/Step3Education';
+import { Step4Projects } from '../steps/Step4Projects';
+import { Step5Suggestions } from '../steps/Step5Suggestions';
+import { Step6FinalizeResume } from '../steps/Step6FinalizeResume';
+import { useOptimizationContext } from '../context/OptimizationContext';
 
-interface StepViewerProps extends StepProps {
-  currentStep: number;
-}
-
-export const StepViewer: React.FC<StepViewerProps> = ({
-  currentStep,
-  resumeText,
-  jobDescriptionText,
-  analysisReport,
-  ...stepProps
-}) => {
+export const StepViewer: React.FC = () => {
+  const { currentStep } = useOptimizationContext();
   const { toast } = useToast();
 
   // Effect to show guidance toasts when entering certain steps
@@ -51,15 +48,29 @@ export const StepViewer: React.FC<StepViewerProps> = ({
     }
   };
 
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return <Step1MissingSections />;
+      case 2:
+        return <Step2WorkExperience />;
+      case 3:
+        return <Step3Education />;
+      case 4:
+        return <Step4Projects />;
+      case 5:
+        return <Step5Suggestions />;
+      case 6:
+        return <Step6FinalizeResume />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="step-content">
       <p className="text-sm text-muted-foreground mb-4 px-6">{getProgressMessage()}</p>
-      {renderStep(currentStep, { 
-        resumeText, 
-        jobDescriptionText, 
-        analysisReport,
-        ...stepProps 
-      })}
+      {renderStep()}
     </div>
   );
 };

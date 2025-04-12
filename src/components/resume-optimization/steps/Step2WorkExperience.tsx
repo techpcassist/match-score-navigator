@@ -2,28 +2,24 @@
 import React from 'react';
 import { CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { WorkExperienceForm } from '../WorkExperienceForm';
-import { WorkExperienceEntry } from '../types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info, AlertCircle, Sparkles } from 'lucide-react';
+import { useOptimizationContext } from '../context/OptimizationContext';
 
-interface Step2WorkExperienceProps {
-  entries: WorkExperienceEntry[];
-  onChange: (entries: WorkExperienceEntry[]) => void;
-  analysisReport?: any;
-}
-
-export const Step2WorkExperience: React.FC<Step2WorkExperienceProps> = ({ 
-  entries, 
-  onChange,
-  analysisReport
-}) => {
+export const Step2WorkExperience: React.FC = () => {
+  const { 
+    workExperienceEntries, 
+    handleWorkExperienceUpdate,
+    usingAIParsing,
+    analysisReport 
+  } = useOptimizationContext();
+  
   // Extract any relevant insights from the analysis report
   const experienceInsights = analysisReport?.section_analysis?.experience || '';
   
   // Check if entries came from AI parsing or manual parsing
   const aiParsedEntries = analysisReport?.parsed_data?.work_experience || [];
-  const usingAIParsing = aiParsedEntries.length > 0;
-  const hasEntries = entries.length > 0;
+  const hasEntries = workExperienceEntries.length > 0;
   
   return (
     <div className="space-y-6">
@@ -47,7 +43,7 @@ export const Step2WorkExperience: React.FC<Step2WorkExperienceProps> = ({
           <Alert className="mb-6" variant="default">
             <Sparkles className="h-4 w-4" />
             <AlertDescription>
-              Our AI has detected {entries.length} work experience entries from your resume. 
+              Our AI has detected {workExperienceEntries.length} work experience entries from your resume. 
               Please review and complete any missing information.
             </AlertDescription>
           </Alert>
@@ -57,7 +53,7 @@ export const Step2WorkExperience: React.FC<Step2WorkExperienceProps> = ({
           <Alert className="mb-6" variant="default">
             <Info className="h-4 w-4" />
             <AlertDescription>
-              We've detected {entries.length} work experience entries from your resume. 
+              We've detected {workExperienceEntries.length} work experience entries from your resume. 
               Please verify the information and complete any missing fields.
             </AlertDescription>
           </Alert>
@@ -73,8 +69,8 @@ export const Step2WorkExperience: React.FC<Step2WorkExperienceProps> = ({
         )}
         
         <WorkExperienceForm 
-          entries={entries}
-          onChange={onChange}
+          entries={workExperienceEntries}
+          onChange={handleWorkExperienceUpdate}
         />
       </CardContent>
     </div>
