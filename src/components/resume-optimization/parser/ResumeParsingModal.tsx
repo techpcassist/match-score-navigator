@@ -55,6 +55,13 @@ const ResumeParsingModal: React.FC<ResumeParsingModalProps> = ({
     };
   }, [isParsing, progress]);
 
+  // Auto-start parsing when modal opens
+  useEffect(() => {
+    if (isOpen && resumeText && !isParsing && progress === 0) {
+      handleParseResume();
+    }
+  }, [isOpen, resumeText]);
+
   const handleParseResume = async () => {
     console.log("Starting resume parsing with text:", resumeText ? `Present (length: ${resumeText.length})` : "Not present");
     
@@ -64,6 +71,7 @@ const ResumeParsingModal: React.FC<ResumeParsingModalProps> = ({
         description: "Please provide resume text to parse.",
         variant: "destructive"
       });
+      onClose();
       return;
     }
     
@@ -105,6 +113,7 @@ const ResumeParsingModal: React.FC<ResumeParsingModalProps> = ({
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive"
       });
+      onClose();
     } finally {
       setIsParsing(false);
     }

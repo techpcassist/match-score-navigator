@@ -23,6 +23,7 @@ const Index = () => {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [finalProcessedResumeText, setFinalProcessedResumeText] = useState('');
+  const [finalProcessedJobText, setFinalProcessedJobText] = useState(''); // Added this state variable
 
   const handleScanClick = () => {
     // Check if we have enough input to analyze
@@ -80,7 +81,9 @@ const Index = () => {
       
       // Save the processed resume text for later use in optimization
       setFinalProcessedResumeText(finalResumeText);
+      setFinalProcessedJobText(finalJobText); // Store the job text in state too
       console.log("Index: Setting finalProcessedResumeText, length:", finalResumeText.length);
+      console.log("Index: Setting finalProcessedJobText, length:", finalJobText.length);
       
       // Check if resume text has changed from last submission
       if (finalResumeText === lastResumeText && lastResumeId) {
@@ -180,7 +183,7 @@ const Index = () => {
           report={report}
           userRole={selectedRole}
           resumeText={finalProcessedResumeText || lastResumeText}
-          jobDescriptionText={finalJobText || lastJobText}
+          jobDescriptionText={finalProcessedJobText || lastJobText}
         />
       )}
     </div>

@@ -19,24 +19,30 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
   const [showParsingModal, setShowParsingModal] = useState(false);
   const [parsedResumeData, setParsedResumeData] = useState(null);
   const [localResumeText, setLocalResumeText] = useState('');
+  const [localJobText, setLocalJobText] = useState(''); // Added to store job text locally
   const { toast } = useToast();
 
   // Use effect to update local state when props change
   useEffect(() => {
+    console.log("ReportView: Received resumeText prop:", resumeText ? `Present (length: ${resumeText.length})` : "Not present");
+    console.log("ReportView: Received jobDescriptionText prop:", jobDescriptionText ? `Present (length: ${jobDescriptionText.length})` : "Not present");
+    
     if (resumeText && resumeText.trim() !== '') {
-      console.log("ReportView: Updating localResumeText from props, length:", resumeText.length);
+      console.log("ReportView: Updating localResumeText from props");
       setLocalResumeText(resumeText);
     }
-  }, [resumeText]);
-
-  console.log("ReportView rendered with resumeText prop:", resumeText ? `Present (length: ${resumeText.length})` : "Not present");
-  console.log("ReportView localResumeText state:", localResumeText ? `Present (length: ${localResumeText.length})` : "Not present");
+    
+    if (jobDescriptionText && jobDescriptionText.trim() !== '') {
+      console.log("ReportView: Updating localJobText from props");
+      setLocalJobText(jobDescriptionText);
+    }
+  }, [resumeText, jobDescriptionText]);
   
   // Handle parse resume action
   const handleParseResume = () => {
     console.log("handleParseResume called", {
-      resumeTextProp: resumeText ? resumeText.substring(0, 50) + "..." : "null or empty",
-      localResumeText: localResumeText ? localResumeText.substring(0, 50) + "..." : "null or empty"
+      resumeTextProp: resumeText ? `Present (length: ${resumeText.length})` : "Not present",
+      localResumeText: localResumeText ? `Present (length: ${localResumeText.length})` : "Not present"
     });
     
     // Use local state for checking, with fallback to prop
