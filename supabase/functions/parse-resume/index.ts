@@ -48,24 +48,24 @@ serve(async (req) => {
       ],
     });
 
-    // Construct the prompt for the parsing task using the detailed instructions
+    // Construct the enhanced prompt for the parsing task
     const prompt = `
     Parse the following resume text STRICTLY based on its content into a structured JSON object. Do NOT invent information or assume details not present. Your primary task is accurate extraction.
 
     1. Identify Sections: Locate standard resume sections like 'Contact Information', 'Summary'/'Objective', 'Skills', 'Work Experience'/'Employment History'/'Professional Experience', 'Education', 'Certifications', 'Projects'.
     
-    2. Parse Contact Details: Extract full_name, email, phone, whatsapp? (if distinct), linkedin? (URL/ID) into a contact_details object.
+    2. Parse Contact Details: Extract full_name, email, phone, whatsapp? (if distinct and clearly identifiable), linkedin? (URL/ID) into a contact_details object.
     
     3. Generate Summary: Create a summary (string): Generate a concise 3-5 line summary based ONLY on the actual content and key terms found throughout the resume.
     
     4. Parse Skills: Extract skills listed in a dedicated 'Skills' section into a skills array (array of strings).
     
     5. Parse Work Experience (CRITICAL DETAIL):
-       - Segment Entries: Carefully identify distinct job entries within the 'Work Experience' section. Entries might be separated by multiple line breaks, horizontal rules, or patterns like COMPANY, CITY, STATE START_DATE to END_DATE. Pay attention to both vertical and horizontal layouts.
-       - Extract for EACH Entry:
+       - Segment Entries: Carefully identify distinct job entries within the 'Work Experience' section. Entries might be separated by multiple line breaks, horizontal rules, or patterns like COMPANY, CITY, STATE START_DATE to END_DATE,,. Pay attention to both vertical and horizontal layouts.
+       - Extract for EACH Entry: For every distinct job entry identified:
          - Extract company_name (string).
          - Extract location: state (string), country (string).
-         - Extract start_date and end_date (strings). Attempt to standardize to MM/YYYY or Month YYYY. Identify 'Present'/'Till Date' for current job.
+         - Extract start_date and end_date (strings). Attempt to standardize to MM/YYYY or Month YYYY format. Identify 'Present'/'Till Date' for the end date of the current job. If dates are ambiguous or missing, reflect that (e.g., return null or the ambiguous text found).
          - Locate job_title (string): Search for the job title associated with this company/date block. It is typically located directly above the company name, immediately following the date range on the same line, or as the first line of the descriptive text for that role. If no specific job title is clearly associated with this entry in the text, return null for this field.
          - Extract responsibilities_text (string): Capture the complete block of text (paragraphs or bullet points) describing roles and responsibilities specifically associated with this company/title/date entry.
          - Extract skills_tools_used (string or array): Identify and list skills or tools mentioned explicitly within the responsibilities_text for this specific job. If none are mentioned in this block, return null or an empty array.
@@ -77,10 +77,10 @@ serve(async (req) => {
        - If is_certification is true, attempt to extract certificate_authority?, certificate_number?, validity?. Return null for fields not found.
        - Collate into an education array.
     
-    7. Handle Missing Information: If any field within an entry cannot be reliably found in the text associated with that specific entry, return null for that specific field. Do not guess, infer widely, or pull information from unrelated parts of the resume. Your output must strictly reflect the input text structure and content.
+    7. Handle Missing Information: If any field within an entry (e.g., job_title for an experience entry, state for education) cannot be reliably found in the text associated with that specific entry, return null for that specific field. Do not guess, infer widely, or pull information from unrelated parts of the resume. Your output must strictly reflect the input text structure and content.
     
     8. Output Format: Return ONLY the structured JSON object containing the extracted data (summary, experiences, education, contact_details, skills). Do not include any explanations, apologies, or introductory text before or after the JSON.
-
+    
     Example output format:
     {
       "summary": "...",
