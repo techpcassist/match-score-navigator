@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { AlertCircle, InfoIcon } from 'lucide-react';
+import { AlertCircle, InfoIcon, BookmarkIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const JobDetailsTips: React.FC = () => {
   // Check if API limit has been reached
@@ -39,6 +40,11 @@ export const JobDetailsTips: React.FC = () => {
           <span>If AI generation fails, the app will use built-in templates as a fallback. No internet connection is needed for basic functionality.</span>
         </p>
       )}
+      
+      <p className="text-xs text-muted-foreground flex items-start gap-1">
+        <BookmarkIcon className="h-3 w-3 mt-0.5 flex-shrink-0" />
+        <span>Once you've optimized your resume, visit the <Link to="/resumes" className="text-blue-500 hover:underline">Resume Dashboard</Link> to manage, edit, and export your polished resumes.</span>
+      </p>
     </div>
   );
 };
