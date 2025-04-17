@@ -39,6 +39,7 @@ const Index = () => {
           setResumeText={setResumeText}
           setJobDescriptionText={setJobDescriptionText}
           setShowJobTitleCompanyForm={setShowJobTitleCompanyForm}
+          canAnalyze={canAnalyze}
         />
         
         <AnalysisWorkflow

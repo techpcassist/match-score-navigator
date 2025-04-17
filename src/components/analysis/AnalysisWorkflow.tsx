@@ -23,6 +23,7 @@ export const AnalysisWorkflow: React.FC<AnalysisWorkflowProps> = ({
   });
 
   const {
+    isAnalyzing,
     matchScore,
     report,
     finalProcessedResumeText,
@@ -39,6 +40,9 @@ export const AnalysisWorkflow: React.FC<AnalysisWorkflowProps> = ({
   const handleRoleConfirm = async (role: UserRole) => {
     setSelectedRole(role);
     setShowRoleModal(false);
+    console.log("Role selected:", role);
+    console.log("Job title:", jobTitleCompanyInfo.jobTitle);
+    console.log("Company name:", jobTitleCompanyInfo.companyName);
     await performAnalysis(role, jobTitleCompanyInfo.jobTitle, jobTitleCompanyInfo.companyName);
   };
 

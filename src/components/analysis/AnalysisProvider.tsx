@@ -88,6 +88,10 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
         jobId = lastJobId;
       }
       
+      console.log("Making API call to analyze resume...");
+      console.log("Resume text length:", finalResumeText.length);
+      console.log("Job description text length:", finalJobText.length);
+      
       const { data, error } = await supabase.functions.invoke('compare-resume', {
         body: {
           resume_text: finalResumeText,
@@ -102,8 +106,11 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
       });
       
       if (error) {
+        console.error("Error from API:", error);
         throw new Error(error.message);
       }
+      
+      console.log("Analysis complete, received data:", data);
       
       setLastResumeText(finalResumeText);
       setLastJobText(finalJobText);

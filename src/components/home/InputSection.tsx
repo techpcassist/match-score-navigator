@@ -13,6 +13,7 @@ interface InputSectionProps {
   setResumeText: (text: string) => void;
   setJobDescriptionText: (text: string) => void;
   setShowJobTitleCompanyForm: (show: boolean) => void;
+  canAnalyze: boolean;
 }
 
 const InputSection: React.FC<InputSectionProps> = ({
@@ -24,11 +25,9 @@ const InputSection: React.FC<InputSectionProps> = ({
   setJobDescriptionFile,
   setResumeText,
   setJobDescriptionText,
-  setShowJobTitleCompanyForm
+  setShowJobTitleCompanyForm,
+  canAnalyze
 }) => {
-  const canAnalyze = (!!resumeFile || resumeText.trim().length > 0) && 
-                     (!!jobDescriptionFile || jobDescriptionText.trim().length > 0);
-
   const handleScanClick = () => {
     if (!canAnalyze) {
       toast({
