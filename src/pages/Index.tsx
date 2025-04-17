@@ -17,7 +17,8 @@ const Index = () => {
     setResumeText,
     setJobDescriptionText,
     setJobDescriptionFile,
-    setShowJobTitleCompanyForm
+    setShowJobTitleCompanyForm,
+    canAnalyze
   } = useResumeInput();
 
   return (
