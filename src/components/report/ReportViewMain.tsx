@@ -81,8 +81,8 @@ export const ReportViewMain: React.FC<ReportViewMainProps> = ({
         open={showJobTitleForm}
         onClose={() => setShowJobTitleForm(false)}
         onSubmit={handleJobTitleSubmit}
-        initialJobTitle={jobTitleInfo.jobTitle !== "unknown" ? jobTitleInfo.jobTitle : ""}
-        initialCompanyName={jobTitleInfo.companyName !== "unknown" ? jobTitleInfo.companyName : ""}
+        jobTitle={jobTitleInfo.jobTitle !== "unknown" ? jobTitleInfo.jobTitle : ""}
+        companyName={jobTitleInfo.companyName !== "unknown" ? jobTitleInfo.companyName : ""}
       />
 
       {/* Job Title Analysis Display - only show if we have both job title and company name */}
