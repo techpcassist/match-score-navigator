@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScoreDisplay } from './ScoreDisplay';
 import { TrophyIcon } from 'lucide-react';
 import { ATSChecksSection } from './ATSChecksSection';
@@ -10,6 +10,8 @@ import { StructureAnalysisSection } from './StructureAnalysisSection';
 import { SuggestionsSection } from './SuggestionsSection';
 import { ReportActions } from './ReportActions';
 import { ReportData } from './types';
+import { JobTitleCompanyForm } from './JobTitleCompanyForm';
+import { toast } from '@/hooks/use-toast';
 
 interface ReportViewMainProps {
   matchScore: number;
@@ -30,6 +32,36 @@ export const ReportViewMain: React.FC<ReportViewMainProps> = ({
   onParseResume,
   isMobile = false
 }) => {
+  const [showJobTitleForm, setShowJobTitleForm] = useState(false);
+  const [jobTitleInfo, setJobTitleInfo] = useState({
+    jobTitle: '',
+    companyName: ''
+  });
+
+  // Check if job title and company name are available in the report
+  useEffect(() => {
+    if (report && report.job_title_analysis) {
+      const { job_title, company_name } = report.job_title_analysis;
+      
+      if (job_title === "unknown" || company_name === "unknown") {
+        setShowJobTitleForm(true);
+      } else {
+        setJobTitleInfo({
+          jobTitle: job_title,
+          companyName: company_name
+        });
+      }
+    }
+  }, [report]);
+
+  const handleJobTitleSubmit = (jobTitle: string, companyName: string) => {
+    setJobTitleInfo({ jobTitle, companyName });
+    toast({
+      title: "Information Updated",
+      description: "Job title and company name have been added to your analysis.",
+    });
+  };
+
   return (
     <div className="space-y-6 md:space-y-8">
       <ScoreDisplay matchScore={matchScore} />
@@ -43,6 +75,33 @@ export const ReportViewMain: React.FC<ReportViewMainProps> = ({
           </div>
         )}
       </div>
+
+      {/* Job Title Company Form */}
+      <JobTitleCompanyForm 
+        open={showJobTitleForm}
+        onClose={() => setShowJobTitleForm(false)}
+        onSubmit={handleJobTitleSubmit}
+        initialJobTitle={jobTitleInfo.jobTitle !== "unknown" ? jobTitleInfo.jobTitle : ""}
+        initialCompanyName={jobTitleInfo.companyName !== "unknown" ? jobTitleInfo.companyName : ""}
+      />
+
+      {/* Job Title Analysis Display - only show if we have both job title and company name */}
+      {jobTitleInfo.jobTitle && jobTitleInfo.companyName && report.job_title_analysis && (
+        <div className="bg-muted/30 p-4 rounded-md border">
+          <h3 className="text-lg font-medium mb-2">Job Role Analysis</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium">Job Title: <span className="font-normal">{jobTitleInfo.jobTitle}</span></p>
+              <p className="text-sm font-medium">Company: <span className="font-normal">{jobTitleInfo.companyName}</span></p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                This analysis provides insights into how your qualifications align with this specific role
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ATSChecksSection checks={report.ats_checks} />
       <KeywordsSection 

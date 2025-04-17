@@ -52,7 +52,24 @@ export function createAnalysisPrompt(resumeText: string, jobText: string, userRo
      - University/institution name
      - Location
      - Start and end dates
-  
+     
+  3. Job Title Analysis:
+     - Extract the job title from the job description
+     - Extract the company name from the job description
+     - Analyze how well the candidate's experience matches this specific job title at this specific company
+     - If unable to determine job title or company name, mark these fields as "unknown" in your analysis
+     
+  Additionally, when analyzing the job title, consider the following parameters:
+  - Core technical skills required for this role at this company
+  - Relevant experience needed for this position
+  - Educational requirements for this role
+  - Essential soft skills for success in this position
+  - Industry-specific knowledge relevant to this company
+  - Key responsibilities for this role
+  - Performance indicators that would measure success
+  - Work culture fit considerations for this specific company
+  - Career growth opportunities within this company
+
   Include this structured data in your response JSON.
   `;
   
@@ -100,6 +117,21 @@ export function createAnalysisPrompt(resumeText: string, jobText: string, userRo
       "achievement_emphasis": {
         "level": "high"|"medium"|"low",
         "issues": ["issue 1", "issue 2", ...]
+      }
+    },
+    "job_title_analysis": {
+      "job_title": "extracted title or unknown",
+      "company_name": "extracted company or unknown",
+      "key_parameters": {
+        "core_technical_skills": ["skill1", "skill2", ...],
+        "relevant_experience": "description",
+        "educational_requirements": "description",
+        "essential_soft_skills": ["skill1", "skill2", ...],
+        "industry_specific_knowledge": "description",
+        "key_responsibilities": "description",
+        "performance_indicators": ["metric1", "metric2", ...],
+        "work_culture_fit": "description",
+        "career_growth": "description"
       }
     },
     "parsed_data": {
