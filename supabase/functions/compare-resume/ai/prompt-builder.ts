@@ -1,78 +1,62 @@
 
 import { UserRole } from "./types.ts";
 
-export function createAnalysisPrompt(resumeText: string, jobText: string, userRole?: UserRole): string {
-  // Base analysis prompt
-  let prompt = `
-  Analyze this resume and job description for a match:
+interface News {
+  title: string;
+  content: string;
+}
+
+export function createAnalysisPrompt(resumeText: string, jobText: string, userRole?: UserRole, jobTitle?: string, companyName?: string): string {
+  // Base company info if none provided
+  const defaultCompanyInfo = {
+    description: "A platform/community focused on empowering developers, fostering a positive environment, and providing developer tools and resources.",
+    culture: "Friendly, inclusive, developer-centric, collaborative, and valuing learning and growth.",
+    goals: "To empower developers, build a strong and supportive community, and create valuable resources and tools for the development ecosystem."
+  };
+
+  // Build prompt based on the company info and job details
+  const prompt = `
+  Analyze the following:
+  
+  JOB DESCRIPTION:
+  ${jobText}
   
   RESUME:
   ${resumeText}
   
-  JOB DESCRIPTION:
-  ${jobText}
-  `;
+  CONTEXT:
+  ${jobTitle ? `Job Title: "${jobTitle}"` : 'Job title not provided'}
+  ${companyName ? `Company: "${companyName}"` : 'Company not specified'}
   
-  // Add role-specific instructions
-  if (userRole === "job_seeker") {
-    prompt += `
-  PERSPECTIVE: JOB SEEKER
-  Analyze this from the perspective of the Job Seeker trying to improve their resume for this specific job. 
-  Focus heavily on identifying missing keywords they should add, providing actionable ATS formatting advice, 
-  and phrasing suggestions for self-improvement. Emphasize specific changes the candidate can make to improve 
-  their chances. De-emphasize comparative evaluation unless relevant for improvement.
-    `;
-  } else if (userRole === "recruiter") {
-    prompt += `
-  PERSPECTIVE: RECRUITER
-  Analyze this from the perspective of a Recruiter evaluating this candidate's resume against the job description. 
-  Focus on highlighting the degree of alignment with key requirements, clearly stating critical skill gaps, 
-  providing concise justifications for advanced criteria assessments, and summarizing overall suitability. 
-  Emphasize qualitative evaluation of the candidate's fit for the role. Less detail needed on generic ATS advice.
-    `;
-  }
+  Company Description: ${defaultCompanyInfo.description}
+  Company Culture: ${defaultCompanyInfo.culture}
+  Company Goals: ${defaultCompanyInfo.goals}
   
-  // Add detailed structured parsing instructions
-  prompt += `
-  ADDITIONAL TASK: STRUCTURED RESUME PARSING
-  In addition to the analysis, extract structured data from the resume:
-  1. Work Experience: For each position, identify:
-     - Company name
-     - Job title
-     - Start and end dates (or "Present" if current)
-     - Location information (country, state/province, city if available)
-     - Description/responsibilities
-  
-  2. Education: For each entry, identify:
-     - Degree/certificate name
-     - Field of study
-     - University/institution name
-     - Location
-     - Start and end dates
-     
-  3. Job Title Analysis:
-     - Extract the job title from the job description
-     - Extract the company name from the job description
-     - Analyze how well the candidate's experience matches this specific job title at this specific company
-     - If unable to determine job title or company name, mark these fields as "unknown" in your analysis
-     
-  Additionally, when analyzing the job title, consider the following parameters:
-  - Core technical skills required for this role at this company
-  - Relevant experience needed for this position
-  - Educational requirements for this role
-  - Essential soft skills for success in this position
-  - Industry-specific knowledge relevant to this company
-  - Key responsibilities for this role
-  - Performance indicators that would measure success
-  - Work culture fit considerations for this specific company
-  - Career growth opportunities within this company
+  Identify and list the key parameters based on the job description and resume match, considering:
 
-  Include this structured data in your response JSON.
-  `;
-  
-  // Add the required JSON structure for output
-  prompt += `
-  Respond with a JSON object containing the following structure:
+  1. Core Technical Skills: List specific technical skills, software, tools, and technologies required
+  2. Relevant Experience: Describe type and level of experience needed
+  3. Educational Requirements: List required degrees, certifications, or specialized training
+  4. Essential Soft Skills: List crucial soft skills like communication, empathy, collaboration
+  5. Industry-Specific Knowledge: Identify specialized knowledge requirements
+  6. Key Responsibilities: Summarize core responsibilities
+  7. Performance Indicators: Key metrics for success
+  8. Work Culture Fit: Describe optimal cultural alignment
+  9. Career Growth: Potential career growth opportunities
+
+  ${userRole === "job_seeker" ? 
+    `PERSPECTIVE: JOB SEEKER
+    Analyze this from the perspective of the Job Seeker trying to improve their resume for this specific job. 
+    Focus heavily on identifying missing keywords they should add, providing actionable ATS formatting advice, 
+    and phrasing suggestions for self-improvement.` 
+    : 
+    `PERSPECTIVE: RECRUITER
+    Analyze this from the perspective of a Recruiter evaluating this candidate's resume against the job description. 
+    Focus on highlighting the degree of alignment with key requirements, clearly stating critical skill gaps, 
+    and summarizing overall suitability.`
+  }
+
+  Return a JSON object with your analysis using this structure:
   {
     "match_score": number (0-100),
     "keywords": {
@@ -90,7 +74,6 @@ export function createAnalysisPrompt(resumeText: string, jobText: string, userRo
     "performance_indicators": {
       "job_kpis": ["kpi 1", "kpi 2", ...],
       "resume_kpis": ["kpi 1", "kpi 2", ...],
-      "quantified_metrics": ["metric 1", "metric 2", ...],
       "match_percentage": number (0-100)
     },
     "section_analysis": {
@@ -117,8 +100,8 @@ export function createAnalysisPrompt(resumeText: string, jobText: string, userRo
       }
     },
     "job_title_analysis": {
-      "job_title": "extracted title or unknown",
-      "company_name": "extracted company or unknown",
+      "job_title": "string",
+      "company_name": "string",
       "key_parameters": {
         "core_technical_skills": ["skill1", "skill2", ...],
         "relevant_experience": "description",
@@ -130,41 +113,10 @@ export function createAnalysisPrompt(resumeText: string, jobText: string, userRo
         "work_culture_fit": "description",
         "career_growth": "description"
       }
-    },
-    "parsed_data": {
-      "work_experience": [
-        {
-          "id": "string",
-          "company": "string",
-          "title": "string",
-          "startDate": "string",
-          "endDate": "string",
-          "companyLocation": {
-            "country": "string",
-            "state": "string",
-            "city": "string"
-          },
-          "description": "string"
-        },
-        ...
-      ],
-      "education": [
-        {
-          "id": "string",
-          "degree": "string",
-          "fieldOfStudy": "string",
-          "university": "string",
-          "country": "string",
-          "state": "string",
-          "startDate": "string",
-          "endDate": "string"
-        },
-        ...
-      ]
     }
   }
   
-  Return ONLY valid JSON without any markdown formatting or explanations. The analysis should be specific to the job type mentioned in the job description, identifying appropriate skills and requirements for that particular industry.`;
+  Return ONLY valid JSON without any markdown formatting or explanations.`; 
 
   return prompt;
 }
