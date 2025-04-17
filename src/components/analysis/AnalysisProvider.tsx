@@ -94,38 +94,43 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
       console.log("Job Title:", jobTitle);
       console.log("Company Name:", companyName);
       
-      const { data, error } = await supabase.functions.invoke('compare-resume', {
-        body: {
-          resume_text: finalResumeText,
-          job_description_text: finalJobText,
-          resume_file_path: storedFilePath,
-          resume_id: resumeId,
-          job_id: jobId,
-          user_role: userRole,
-          job_title: jobTitle,
-          company_name: companyName
+      try {
+        const { data, error } = await supabase.functions.invoke('compare-resume', {
+          body: {
+            resume_text: finalResumeText,
+            job_description_text: finalJobText,
+            resume_file_path: storedFilePath,
+            resume_id: resumeId,
+            job_id: jobId,
+            user_role: userRole,
+            job_title: jobTitle || "Unknown Position",
+            company_name: companyName || "Unknown Company"
+          }
+        });
+        
+        if (error) {
+          console.error("Error from API:", error);
+          throw new Error(error.message);
         }
-      });
-      
-      if (error) {
-        console.error("Error from API:", error);
-        throw new Error(error.message);
+        
+        console.log("Analysis complete, received data:", data);
+        
+        setLastResumeText(finalResumeText);
+        setLastJobText(finalJobText);
+        setLastResumeId(data.resume_id);
+        setLastJobId(data.job_description_id);
+        
+        setMatchScore(data.match_score);
+        setReport(data.report);
+        
+        toast({
+          title: "Analysis complete",
+          description: `Match score: ${data.match_score}%`,
+        });
+      } catch (apiError) {
+        console.error("Failed to call edge function:", apiError);
+        throw new Error("Failed to reach analysis service. Please try again later.");
       }
-      
-      console.log("Analysis complete, received data:", data);
-      
-      setLastResumeText(finalResumeText);
-      setLastJobText(finalJobText);
-      setLastResumeId(data.resume_id);
-      setLastJobId(data.job_description_id);
-      
-      setMatchScore(data.match_score);
-      setReport(data.report);
-      
-      toast({
-        title: "Analysis complete",
-        description: `Match score: ${data.match_score}%`,
-      });
     } catch (error) {
       console.error("Error analyzing resume:", error);
       toast({

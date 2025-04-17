@@ -27,7 +27,7 @@ export interface BasicAnalysisResult {
 /**
  * Performs a simple keyword-based comparison when AI analysis fails
  */
-export const performBasicComparison = (resumeText: string, jobDescriptionText: string): BasicAnalysisResult => {
+export const performBasicComparison = (resumeText: string, jobDescriptionText: string, jobTitle?: string, companyName?: string): BasicAnalysisResult => {
   console.log("Using fallback basic analysis method");
   
   // Extract keywords from both texts
@@ -39,7 +39,7 @@ export const performBasicComparison = (resumeText: string, jobDescriptionText: s
     resumeText.toLowerCase().includes(keyword)
   );
   
-  const matchScore = Math.round((matchedKeywords.length / jobKeywords.length) * 100);
+  const matchScore = Math.round((matchedKeywords.length / (jobKeywords.length || 1)) * 100);
   
   // Create a minimal analysis structure
   const basicAnalysis = {
@@ -66,7 +66,11 @@ export const performBasicComparison = (resumeText: string, jobDescriptionText: s
       "This is a basic fallback analysis as the AI service could not be reached.",
       "Try adding more keywords from the job description to your resume.",
       "Consider trying again later when AI services are available for more detailed analysis."
-    ]
+    ],
+    job_title_analysis: {
+      job_title: jobTitle || "Unknown Position",
+      company_name: companyName || "Unknown Company"
+    }
   };
 
   return { 

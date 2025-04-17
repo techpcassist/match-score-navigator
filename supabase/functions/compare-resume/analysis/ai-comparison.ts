@@ -68,8 +68,8 @@ export const compareResumeToJob = async (
       if (jobTitle || companyName) {
         jobTitleAnalysis = {
           ...jobTitleAnalysis,
-          job_title: jobTitle || jobTitleAnalysis.job_title || "unknown",
-          company_name: companyName || jobTitleAnalysis.company_name || "unknown"
+          job_title: jobTitle || jobTitleAnalysis.job_title || "Unknown Position",
+          company_name: companyName || jobTitleAnalysis.company_name || "Unknown Company"
         };
       }
       
@@ -95,15 +95,7 @@ export const compareResumeToJob = async (
   } catch (error) {
     // Fall back to a basic keyword matching approach
     console.error("Error with Google Generative AI, using fallback analysis:", error);
-    const basicResult = performBasicComparison(resumeText, jobDescriptionText);
-    
-    // Add job title and company to basic result if provided
-    if (jobTitle || companyName) {
-      basicResult.analysis.job_title_analysis = {
-        job_title: jobTitle || "unknown",
-        company_name: companyName || "unknown"
-      };
-    }
+    const basicResult = performBasicComparison(resumeText, jobDescriptionText, jobTitle, companyName);
     
     return basicResult;
   }

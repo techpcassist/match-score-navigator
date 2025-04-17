@@ -45,6 +45,12 @@ export async function handleCompareResumeRequest(req: Request) {
     // Create Supabase client through database handler
     const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Missing Supabase configuration");
+      return createErrorResponse("Server configuration error", 500);
+    }
+    
     const dbHandler = new DatabaseHandler(supabaseUrl, supabaseKey);
     
     // Process the resume and job description data
@@ -123,45 +129,50 @@ async function processResumeAndJobData(
   let resumeData;
   let jobData;
   
-  // Check if provided resume_id exists and use it
-  if (resumeId) {
-    resumeData = await dbHandler.getResumeById(resumeId);
-    console.log("Using existing resume ID:", resumeId);
-  }
-  
-  // If resume_id was not provided or not found, check if same text exists
-  if (!resumeData) {
-    resumeData = await dbHandler.findResumeByText(resumeText);
-    if (resumeData) {
-      console.log("Found resume with matching text");
+  try {
+    // Check if provided resume_id exists and use it
+    if (resumeId) {
+      resumeData = await dbHandler.getResumeById(resumeId);
+      console.log("Using existing resume ID:", resumeId);
     }
-  }
-  
-  // If still no match, store as new resume
-  if (!resumeData) {
-    resumeData = await dbHandler.storeResume(resumeText, resumeFilePath || null);
-    console.log("Created new resume with ID:", resumeData.id);
-  }
-  
-  // Same process for job description
-  if (jobId) {
-    jobData = await dbHandler.getJobById(jobId);
-    console.log("Using existing job ID:", jobId);
-  }
-  
-  if (!jobData) {
-    jobData = await dbHandler.findJobByText(jobDescriptionText);
-    if (jobData) {
-      console.log("Found job description with matching text");
+    
+    // If resume_id was not provided or not found, check if same text exists
+    if (!resumeData) {
+      resumeData = await dbHandler.findResumeByText(resumeText);
+      if (resumeData) {
+        console.log("Found resume with matching text");
+      }
     }
+    
+    // If still no match, store as new resume
+    if (!resumeData) {
+      resumeData = await dbHandler.storeResume(resumeText, resumeFilePath || null);
+      console.log("Created new resume with ID:", resumeData.id);
+    }
+    
+    // Same process for job description
+    if (jobId) {
+      jobData = await dbHandler.getJobById(jobId);
+      console.log("Using existing job ID:", jobId);
+    }
+    
+    if (!jobData) {
+      jobData = await dbHandler.findJobByText(jobDescriptionText);
+      if (jobData) {
+        console.log("Found job description with matching text");
+      }
+    }
+    
+    if (!jobData) {
+      jobData = await dbHandler.storeJobDescription(jobDescriptionText);
+      console.log("Created new job description with ID:", jobData.id);
+    }
+    
+    return { resumeData, jobData };
+  } catch (dbError) {
+    console.error("Database operation error:", dbError);
+    throw new Error("Failed to process resume and job data: " + dbError.message);
   }
-  
-  if (!jobData) {
-    jobData = await dbHandler.storeJobDescription(jobDescriptionText);
-    console.log("Created new job description with ID:", jobData.id);
-  }
-  
-  return { resumeData, jobData };
 }
 
 /**
