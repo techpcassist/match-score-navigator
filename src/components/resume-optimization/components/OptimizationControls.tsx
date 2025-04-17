@@ -1,8 +1,6 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { useOptimizationContext } from '../context/OptimizationContext';
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Check } from "lucide-react";
 
 interface OptimizationControlsProps {
   onClose: () => void;
@@ -10,55 +8,20 @@ interface OptimizationControlsProps {
   isMobile?: boolean;
 }
 
-export const OptimizationControls: React.FC<OptimizationControlsProps> = ({ 
-  onClose, 
+export const OptimizationControls: React.FC<OptimizationControlsProps> = ({
+  onClose,
   onFinalize,
-  isMobile 
+  isMobile = false,
 }) => {
-  const { 
-    currentStep, 
-    setCurrentStep, 
-    addCompletedStep
-  } = useOptimizationContext();
-  
-  const totalSteps = 6; // Total number of steps
-
-  const handleNextStep = () => {
-    // Mark current step as completed
-    addCompletedStep(currentStep);
-    
-    // Move to next step
-    setCurrentStep(Math.min(currentStep + 1, totalSteps));
-  };
-  
-  const handlePreviousStep = () => {
-    setCurrentStep(Math.max(currentStep - 1, 1));
-  };
-
   return (
-    <div className={`p-${isMobile ? '4' : '6'} flex justify-between`}>
-      <Button 
-        variant="outline" 
-        onClick={currentStep === 1 ? onClose : handlePreviousStep}
-        size={isMobile ? "sm" : "default"}
-      >
-        {currentStep === 1 ? 'Cancel' : (
-          <>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </>
-        )}
+    <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-4 p-4 border-t`}>
+      <Button onClick={onClose} variant="outline">
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back
       </Button>
-      <Button 
-        onClick={currentStep === totalSteps ? onFinalize : handleNextStep}
-        size={isMobile ? "sm" : "default"}
-      >
-        {currentStep === totalSteps ? 'Finalize Resume' : (
-          <>
-            Next
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </>
-        )}
+      <Button onClick={onFinalize}>
+        <Check className="w-4 h-4 mr-2" />
+        Finalize Resume
       </Button>
     </div>
   );

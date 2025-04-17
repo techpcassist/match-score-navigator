@@ -1,63 +1,54 @@
 
-import React from 'react';
 import { useOptimizationContext } from '../context/OptimizationContext';
+import { Check } from 'lucide-react';
 
 interface ProgressStepperProps {
   isMobile?: boolean;
 }
 
-export const ProgressStepper: React.FC<ProgressStepperProps> = ({ isMobile }) => {
-  const { 
-    currentStep, 
-    completedSteps
-  } = useOptimizationContext();
+export const ProgressStepper: React.FC<ProgressStepperProps> = ({ isMobile = false }) => {
+  const { currentStep, completedSteps } = useOptimizationContext();
   
-  const totalSteps = 6; // Total number of steps
-  
-  // Generate array of step numbers
-  const steps = Array.from({ length: totalSteps }, (_, i) => i + 1);
-  
+  const steps = [
+    'Missing Sections',
+    'Work Experience',
+    'Education',
+    'Projects',
+    'Suggestions',
+    'Finalize'
+  ];
+
   return (
-    <div className={`${isMobile ? 'py-3' : 'py-6'} px-4`}>
-      <div className="flex justify-between">
-        {steps.map((step) => (
-          <div key={step} className="flex flex-col items-center">
-            <div 
+    <div className={`flex ${isMobile ? 'overflow-x-auto' : ''} gap-4 p-4 border-b`}>
+      {steps.map((step, index) => {
+        const stepNumber = index + 1;
+        const isActive = stepNumber === currentStep;
+        const isCompleted = completedSteps.includes(stepNumber);
+        
+        return (
+          <div
+            key={stepNumber}
+            className={`flex items-center ${isMobile ? 'flex-shrink-0' : ''}`}
+          >
+            <div
               className={`
-                flex items-center justify-center
-                h-8 w-8 rounded-full 
-                ${currentStep === step 
-                  ? 'bg-primary text-primary-foreground' 
-                  : completedSteps.includes(step)
-                    ? 'bg-green-500 text-white'
-                    : 'bg-muted text-muted-foreground'
-                }
+                flex items-center justify-center w-8 h-8 rounded-full transition-colors
+                ${isActive ? 'bg-primary text-primary-foreground' : ''}
+                ${isCompleted ? 'bg-green-500 text-white' : ''}
+                ${!isActive && !isCompleted ? 'bg-muted text-muted-foreground' : ''}
               `}
             >
-              {step}
+              {isCompleted ? <Check className="w-4 h-4" /> : stepNumber}
             </div>
-            {!isMobile && (
-              <span className="mt-2 text-xs">
-                Step {step}
-              </span>
+            <span className={`ml-2 text-sm ${isActive ? 'font-medium' : ''}`}>
+              {step}
+            </span>
+            {stepNumber < steps.length && (
+              <div className="w-8 h-px bg-border mx-2" />
             )}
           </div>
-        ))}
-      </div>
-      {/* Progress Line */}
-      <div className="relative mt-4">
-        <div className="absolute inset-0 flex items-center">
-          <div className="h-0.5 w-full bg-muted"></div>
-        </div>
-        <div 
-          className="absolute inset-0 flex items-center" 
-          style={{ 
-            width: `${(((currentStep - 1) / (totalSteps - 1)) * 100)}%` 
-          }}
-        >
-          <div className="h-0.5 w-full bg-primary"></div>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 };

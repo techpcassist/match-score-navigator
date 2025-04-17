@@ -1,4 +1,3 @@
-
 export interface Skill {
   term: string;
   matched: boolean;
@@ -87,4 +86,10 @@ export interface ReportData {
 export interface ReportViewProps {
   matchScore: number;
   report: ReportData;
+}
+
+export interface KeywordsSectionProps {
+  hardSkills: Skill[];
+  softSkills: Skill[];
+  isMobile?: boolean;
 }
