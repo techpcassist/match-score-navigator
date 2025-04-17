@@ -16,23 +16,23 @@ interface JobTitleCompanyFormProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (jobTitle: string, companyName: string) => void;
-  initialJobTitle?: string;
-  initialCompanyName?: string;
+  jobTitle?: string;
+  companyName?: string;
 }
 
 export const JobTitleCompanyForm: React.FC<JobTitleCompanyFormProps> = ({
   open,
   onClose,
   onSubmit,
-  initialJobTitle = '',
-  initialCompanyName = ''
+  jobTitle = '',
+  companyName = ''
 }) => {
-  const [jobTitle, setJobTitle] = useState(initialJobTitle);
-  const [companyName, setCompanyName] = useState(initialCompanyName);
+  const [jobTitleInput, setJobTitleInput] = useState(jobTitle);
+  const [companyNameInput, setCompanyNameInput] = useState(companyName);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(jobTitle, companyName);
+    onSubmit(jobTitleInput, companyNameInput);
     onClose();
   };
 
@@ -53,8 +53,8 @@ export const JobTitleCompanyForm: React.FC<JobTitleCompanyFormProps> = ({
               </Label>
               <Input
                 id="jobTitle"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
+                value={jobTitleInput}
+                onChange={(e) => setJobTitleInput(e.target.value)}
                 className="col-span-3"
                 placeholder="e.g. Software Engineer"
                 required
@@ -66,8 +66,8 @@ export const JobTitleCompanyForm: React.FC<JobTitleCompanyFormProps> = ({
               </Label>
               <Input
                 id="companyName"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
+                value={companyNameInput}
+                onChange={(e) => setCompanyNameInput(e.target.value)}
                 className="col-span-3"
                 placeholder="e.g. Acme Corporation"
                 required
