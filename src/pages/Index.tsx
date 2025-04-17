@@ -6,7 +6,7 @@ import InputCard from '@/components/InputCard';
 import ReportView from '@/components/ReportView';
 import { extractTextFromFile, uploadResumeFile } from '@/utils/fileProcessor';
 import RoleSelectionModal, { UserRole } from '@/components/RoleSelectionModal';
-import JobTitleCompanyForm from '@/components/JobTitleCompanyForm';
+import { JobTitleCompanyForm } from '@/components/report/JobTitleCompanyForm';
 
 const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
