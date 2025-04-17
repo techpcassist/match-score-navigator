@@ -1,42 +1,34 @@
 
-import React, { useState } from 'react';
-import { useIsMobile } from "@/hooks/use-mobile";
-import InputCard from '@/components/InputCard';
+import React from 'react';
 import { AnalysisProvider } from '@/components/analysis/AnalysisProvider';
 import { AnalysisWorkflow } from '@/components/analysis/AnalysisWorkflow';
+import HomeContainer from '@/components/home/HomeContainer';
+import InputSection from '@/components/home/InputSection';
+import { useResumeInput } from '@/hooks/use-resume-input';
 
 const Index = () => {
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [resumeText, setResumeText] = useState('');
-  const [jobDescriptionText, setJobDescriptionText] = useState('');
-  const [jobDescriptionFile, setJobDescriptionFile] = useState<File | null>(null);
-  const [showJobTitleCompanyForm, setShowJobTitleCompanyForm] = useState(false);
-  const isMobile = useIsMobile();
-
-  const canAnalyze = (!!resumeFile || resumeText.trim().length > 0) && 
-                     (!!jobDescriptionFile || jobDescriptionText.trim().length > 0);
-
-  const handleScanClick = () => {
-    if (!canAnalyze) {
-      toast({
-        title: "Missing information",
-        description: "Please provide both a resume and job description to analyze.",
-        variant: "destructive"
-      });
-      return;
-    }
-    setShowJobTitleCompanyForm(true);
-  };
+  const {
+    resumeFile,
+    resumeText,
+    jobDescriptionText,
+    jobDescriptionFile,
+    showJobTitleCompanyForm,
+    setResumeFile,
+    setResumeText,
+    setJobDescriptionText,
+    setJobDescriptionFile,
+    setShowJobTitleCompanyForm
+  } = useResumeInput();
 
   return (
-    <div className={`container mx-auto py-4 md:py-6 ${isMobile ? 'px-3' : 'max-w-4xl'}`}>
+    <HomeContainer>
       <AnalysisProvider
         resumeFile={resumeFile}
         jobDescriptionFile={jobDescriptionFile}
         resumeText={resumeText}
         jobDescriptionText={jobDescriptionText}
       >
-        <InputCard 
+        <InputSection 
           resumeFile={resumeFile}
           jobDescriptionFile={jobDescriptionFile}
           resumeText={resumeText}
@@ -45,9 +37,7 @@ const Index = () => {
           setJobDescriptionFile={setJobDescriptionFile}
           setResumeText={setResumeText}
           setJobDescriptionText={setJobDescriptionText}
-          isAnalyzing={false}
-          canAnalyze={canAnalyze}
-          onAnalyze={handleScanClick}
+          setShowJobTitleCompanyForm={setShowJobTitleCompanyForm}
         />
         
         <AnalysisWorkflow
@@ -55,7 +45,7 @@ const Index = () => {
           onCloseJobTitleForm={() => setShowJobTitleCompanyForm(false)}
         />
       </AnalysisProvider>
-    </div>
+    </HomeContainer>
   );
 };
 
