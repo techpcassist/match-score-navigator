@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { Award, ChevronUp, ChevronDown, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
-import { AdvancedMatchCriteria } from './types';
+import { AdvancedCriterionEntry } from './types';
 
 interface AdvancedCriteriaSectionProps {
-  criteria: AdvancedMatchCriteria[];
+  criteria: AdvancedCriterionEntry[];
 }
 
 export const AdvancedCriteriaSection = ({ criteria }: AdvancedCriteriaSectionProps) => {
