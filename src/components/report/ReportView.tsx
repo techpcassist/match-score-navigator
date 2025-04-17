@@ -11,7 +11,7 @@ import { AdvancedCriteriaSection } from './AdvancedCriteriaSection';
 import { ATSChecksSection } from './ATSChecksSection';
 import { SuggestionsSection } from './SuggestionsSection';
 import { useState } from 'react';
-import { JobTitleForm } from './JobTitleForm';
+import { JobTitleCompanyForm } from './JobTitleCompanyForm';
 
 const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionText }: ReportViewProps) => {
   const [jobInfo, setJobInfo] = useState({
@@ -62,10 +62,12 @@ const ReportView = ({ matchScore, report, userRole, resumeText, jobDescriptionTe
       </CardHeader>
       <CardContent>
         {needsJobInfo && (
-          <JobTitleForm 
+          <JobTitleCompanyForm 
             jobTitle={jobInfo.jobTitle} 
             companyName={jobInfo.companyName}
             onSubmit={handleJobInfoSubmit}
+            open={needsJobInfo}
+            onClose={() => {}}
           />
         )}
         <div className="space-y-6">

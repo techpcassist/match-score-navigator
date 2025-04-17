@@ -1,9 +1,6 @@
 
 import { UserRole } from "./types.ts";
 
-/**
- * Creates a structured prompt for the AI to analyze the resume and job description
- */
 export function createAnalysisPrompt(resumeText: string, jobText: string, userRole?: UserRole): string {
   // Base analysis prompt
   let prompt = `
