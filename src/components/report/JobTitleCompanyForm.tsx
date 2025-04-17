@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -30,6 +30,12 @@ export const JobTitleCompanyForm: React.FC<JobTitleCompanyFormProps> = ({
   const [jobTitleInput, setJobTitleInput] = useState(jobTitle);
   const [companyNameInput, setCompanyNameInput] = useState(companyName);
 
+  // Update state when props change
+  useEffect(() => {
+    setJobTitleInput(jobTitle);
+    setCompanyNameInput(companyName);
+  }, [jobTitle, companyName]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(jobTitleInput, companyNameInput);
@@ -42,7 +48,7 @@ export const JobTitleCompanyForm: React.FC<JobTitleCompanyFormProps> = ({
         <DialogHeader>
           <DialogTitle>Complete Job Information</DialogTitle>
           <DialogDescription>
-            Please provide the job title and company name to enhance your analysis.
+            Please provide the job title and company name to enhance your analysis with company-specific insights and hiring manager perspective.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
