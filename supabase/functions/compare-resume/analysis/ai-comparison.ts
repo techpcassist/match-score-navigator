@@ -23,6 +23,7 @@ export const compareResumeToJob = async (
   companyName?: string
 ): Promise<ComparisonResult> => {
   if (!resumeText || !jobDescriptionText) {
+    console.log("Missing resume or job description text");
     return { match_score: 0, analysis: {} };
   }
 
@@ -37,7 +38,7 @@ export const compareResumeToJob = async (
     const aiResponse = await callGenerativeAI(resumeText, jobDescriptionText, userRole, jobTitle, companyName);
     
     // Check if AI call was successful
-    if (aiResponse.success) {
+    if (aiResponse.success && aiResponse.data) {
       console.log("Successfully got analysis from Google Generative AI");
       
       // Extract work experience and education from AI-parsed data
@@ -48,15 +49,15 @@ export const compareResumeToJob = async (
       const workExperienceWithIds = parsedWorkExperience.map((entry: any, index: number) => ({
         ...entry,
         id: entry.id || `job-${index}`,
-        teamSize: 0,
-        teamName: '',
-        projectName: ''
+        teamSize: entry.teamSize || 0,
+        teamName: entry.teamName || '',
+        projectName: entry.projectName || ''
       }));
       
       const educationWithIds = parsedEducation.map((entry: any, index: number) => ({
         ...entry,
         id: entry.id || `edu-${index}`,
-        customUniversity: false
+        customUniversity: entry.customUniversity || false
       }));
       
       console.log(`AI parsed ${workExperienceWithIds.length} work experience entries and ${educationWithIds.length} education entries`);
@@ -84,7 +85,7 @@ export const compareResumeToJob = async (
       };
       
       return { 
-        match_score: aiResponse.data.match_score, 
+        match_score: aiResponse.data.match_score || 0, 
         analysis: enhancedData
       };
     } else {

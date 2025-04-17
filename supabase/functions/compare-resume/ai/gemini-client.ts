@@ -1,5 +1,4 @@
 
-import { VertexAI } from "npm:@google-cloud/vertexai";
 import { UserRole } from "./types.ts";
 import { createAnalysisPrompt } from "./prompt-builder.ts";
 
@@ -56,6 +55,8 @@ export async function callGenerativeAI(
             maxOutputTokens: 8192,
           },
         }),
+        // Add timeout to prevent hanging requests
+        signal: AbortSignal.timeout(30000), // 30 second timeout
       });
       
       // Check for HTTP errors
@@ -67,6 +68,13 @@ export async function callGenerativeAI(
       
       // Parse the response
       const result = await response.json();
+      
+      // Validate response structure
+      if (!result.candidates || !result.candidates[0] || !result.candidates[0].content || !result.candidates[0].content.parts || !result.candidates[0].content.parts[0]) {
+        console.error("Invalid response structure from primary model:", JSON.stringify(result));
+        throw new Error("Invalid response structure from primary model");
+      }
+      
       const textContent = result.candidates[0].content.parts[0].text;
       
       try {
@@ -82,7 +90,7 @@ export async function callGenerativeAI(
         throw new Error("Failed to parse results from primary model");
       }
     } catch (primaryError) {
-      console.log("Primary model failed, trying fallback model...");
+      console.log("Primary model failed, trying fallback model...", primaryError);
       
       // Fall back to Gemini Pro
       try {
@@ -107,6 +115,8 @@ export async function callGenerativeAI(
               maxOutputTokens: 8192,
             },
           }),
+          // Add timeout to prevent hanging requests
+          signal: AbortSignal.timeout(30000), // 30 second timeout
         });
         
         if (!response.ok) {
@@ -116,6 +126,13 @@ export async function callGenerativeAI(
         }
         
         const result = await response.json();
+        
+        // Validate response structure
+        if (!result.candidates || !result.candidates[0] || !result.candidates[0].content || !result.candidates[0].content.parts || !result.candidates[0].content.parts[0]) {
+          console.error("Invalid response structure from fallback model:", JSON.stringify(result));
+          throw new Error("Invalid response structure from fallback model");
+        }
+        
         const textContent = result.candidates[0].content.parts[0].text;
         
         try {

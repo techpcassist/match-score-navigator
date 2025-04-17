@@ -39,7 +39,7 @@ export const performBasicComparison = (resumeText: string, jobDescriptionText: s
     resumeText.toLowerCase().includes(keyword)
   );
   
-  const matchScore = Math.round((matchedKeywords.length / (jobKeywords.length || 1)) * 100);
+  const matchScore = Math.min(100, Math.round((matchedKeywords.length / (jobKeywords.length || 1)) * 100));
   
   // Create a minimal analysis structure
   const basicAnalysis = {
@@ -64,6 +64,7 @@ export const performBasicComparison = (resumeText: string, jobDescriptionText: s
     ],
     suggestions: [
       "This is a basic fallback analysis as the AI service could not be reached.",
+      "Your resume has been analyzed using a simplified keyword matching algorithm.",
       "Try adding more keywords from the job description to your resume.",
       "Consider trying again later when AI services are available for more detailed analysis."
     ],

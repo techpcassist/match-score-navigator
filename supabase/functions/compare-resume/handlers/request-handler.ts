@@ -2,7 +2,6 @@
 import { compareResumeToJob } from "../analysis/ai-comparison.ts";
 import { DatabaseHandler } from "../database.ts";
 import { UserRole } from "../ai/types.ts";
-import { createAnalysisPrompt } from "../ai/prompt-builder.ts";
 
 // CORS headers for browser access
 const corsHeaders = {
@@ -15,6 +14,15 @@ const corsHeaders = {
  */
 export async function handleCompareResumeRequest(req: Request) {
   try {
+    // Parse the request body with proper error handling
+    let reqBody;
+    try {
+      reqBody = await req.json();
+    } catch (parseError) {
+      console.error("Failed to parse request body:", parseError);
+      return createErrorResponse("Invalid request format: " + parseError.message, 400);
+    }
+    
     const { 
       resume_text, 
       job_description_text, 
@@ -24,7 +32,7 @@ export async function handleCompareResumeRequest(req: Request) {
       user_role,
       job_title,
       company_name
-    } = await req.json();
+    } = reqBody;
     
     // Validate inputs
     if (!resume_text || !job_description_text) {
@@ -43,71 +51,76 @@ export async function handleCompareResumeRequest(req: Request) {
     }
     
     // Create Supabase client through database handler
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!supabaseUrl || !supabaseKey) {
       console.error("Missing Supabase configuration");
       return createErrorResponse("Server configuration error", 500);
     }
     
-    const dbHandler = new DatabaseHandler(supabaseUrl, supabaseKey);
-    
-    // Process the resume and job description data
-    const { resumeData, jobData } = await processResumeAndJobData(
-      dbHandler, 
-      resume_text, 
-      job_description_text, 
-      resume_id, 
-      job_id, 
-      resume_file_path
-    );
-    
-    // Perform the comparison using the Google Generative AI approach
-    console.log("Calling compareResumeToJob with Google Generative AI integration");
-    console.log("Using user role:", user_role || "not specified");
-    console.log("Job title:", job_title || "not specified");
-    console.log("Company name:", company_name || "not specified");
-    
-    const comparisonResult = await compareResumeToJob(resume_text, job_description_text, user_role as UserRole, job_title, company_name);
-    
     try {
-      // Store the comparison result - handle potential duplicate key errors
-      const comparisonData = await dbHandler.storeComparison(
-        resumeData.id,
-        jobData.id,
-        comparisonResult.match_score,
-        comparisonResult.analysis
+      const dbHandler = new DatabaseHandler(supabaseUrl, supabaseKey);
+      
+      // Process the resume and job description data
+      const { resumeData, jobData } = await processResumeAndJobData(
+        dbHandler, 
+        resume_text, 
+        job_description_text, 
+        resume_id, 
+        job_id, 
+        resume_file_path
       );
       
-      // Return the comparison result along with the stored IDs
-      return createSuccessResponse({
-        resume_id: resumeData.id,
-        job_description_id: jobData.id,
-        comparison_id: comparisonData.id,
-        match_score: comparisonResult.match_score,
-        report: comparisonResult.analysis,
-        resume_file_path,
-        user_role: user_role || null,
-        job_title: job_title || null,
-        company_name: company_name || null
-      });
-    } catch (dbError) {
-      console.error("Database error in compare-resume function:", dbError);
+      // Perform the comparison using the Google Generative AI approach
+      console.log("Calling compareResumeToJob with Google Generative AI integration");
+      console.log("Using user role:", user_role || "not specified");
+      console.log("Job title:", job_title || "not specified");
+      console.log("Company name:", company_name || "not specified");
       
-      // If it's a duplicate key error, we can still return the analysis
-      // without creating a new comparison record
-      return createSuccessResponse({
-        resume_id: resumeData.id,
-        job_description_id: jobData.id,
-        match_score: comparisonResult.match_score,
-        report: comparisonResult.analysis,
-        resume_file_path,
-        user_role: user_role || null,
-        job_title: job_title || null,
-        company_name: company_name || null,
-        warning: "Existing comparison was retrieved"
-      });
+      const comparisonResult = await compareResumeToJob(resume_text, job_description_text, user_role as UserRole, job_title, company_name);
+      
+      try {
+        // Store the comparison result - handle potential duplicate key errors
+        const comparisonData = await dbHandler.storeComparison(
+          resumeData.id,
+          jobData.id,
+          comparisonResult.match_score,
+          comparisonResult.analysis
+        );
+        
+        // Return the comparison result along with the stored IDs
+        return createSuccessResponse({
+          resume_id: resumeData.id,
+          job_description_id: jobData.id,
+          comparison_id: comparisonData.id,
+          match_score: comparisonResult.match_score,
+          report: comparisonResult.analysis,
+          resume_file_path,
+          user_role: user_role || null,
+          job_title: job_title || null,
+          company_name: company_name || null
+        });
+      } catch (dbError) {
+        console.error("Database error in compare-resume function:", dbError);
+        
+        // If it's a duplicate key error, we can still return the analysis
+        // without creating a new comparison record
+        return createSuccessResponse({
+          resume_id: resumeData.id,
+          job_description_id: jobData.id,
+          match_score: comparisonResult.match_score,
+          report: comparisonResult.analysis,
+          resume_file_path,
+          user_role: user_role || null,
+          job_title: job_title || null,
+          company_name: company_name || null,
+          warning: "Existing comparison was retrieved"
+        });
+      }
+    } catch (dbConnError) {
+      console.error("Database connection error:", dbConnError);
+      return createErrorResponse("Database connection error: " + dbConnError.message, 500);
     }
   } catch (error) {
     console.error("Error in compare-resume function:", error);
