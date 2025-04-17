@@ -30,25 +30,30 @@ export const JobTitleCompanyForm: React.FC<JobTitleCompanyFormProps> = ({
   const [jobTitleInput, setJobTitleInput] = useState(jobTitle);
   const [companyNameInput, setCompanyNameInput] = useState(companyName);
 
-  // Update state when props change
   useEffect(() => {
-    setJobTitleInput(jobTitle);
-    setCompanyNameInput(companyName);
-  }, [jobTitle, companyName]);
+    if (open) {
+      setJobTitleInput(jobTitle);
+      setCompanyNameInput(companyName);
+    }
+  }, [open, jobTitle, companyName]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(jobTitleInput, companyNameInput);
-    onClose();
   };
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Complete Job Information</DialogTitle>
+          <DialogTitle>Job Position Details</DialogTitle>
           <DialogDescription>
-            Please provide the job title and company name to enhance your analysis with company-specific insights and hiring manager perspective.
+            Please provide the job title and company name to receive personalized insights from a hiring manager's perspective, including:
+            • Required technical and soft skills
+            • Expected qualifications and experience
+            • Company culture fit analysis
+            • Industry-specific expectations
+            • Career growth opportunities
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -62,7 +67,7 @@ export const JobTitleCompanyForm: React.FC<JobTitleCompanyFormProps> = ({
                 value={jobTitleInput}
                 onChange={(e) => setJobTitleInput(e.target.value)}
                 className="col-span-3"
-                placeholder="e.g. Software Engineer"
+                placeholder="e.g. Senior Software Engineer"
                 required
               />
             </div>
@@ -75,13 +80,13 @@ export const JobTitleCompanyForm: React.FC<JobTitleCompanyFormProps> = ({
                 value={companyNameInput}
                 onChange={(e) => setCompanyNameInput(e.target.value)}
                 className="col-span-3"
-                placeholder="e.g. Acme Corporation"
+                placeholder="e.g. Tech Solutions Inc."
                 required
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Submit</Button>
+            <Button type="submit">Continue Analysis</Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +6,7 @@ import InputCard from '@/components/InputCard';
 import ReportView from '@/components/ReportView';
 import { extractTextFromFile, uploadResumeFile } from '@/utils/fileProcessor';
 import RoleSelectionModal, { UserRole } from '@/components/RoleSelectionModal';
+import JobTitleCompanyForm from '@/components/JobTitleCompanyForm';
 
 const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -25,10 +25,14 @@ const Index = () => {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [finalProcessedResumeText, setFinalProcessedResumeText] = useState('');
   const [finalProcessedJobText, setFinalProcessedJobText] = useState(''); 
+  const [showJobTitleCompanyForm, setShowJobTitleCompanyForm] = useState(false);
+  const [jobTitleCompanyInfo, setJobTitleCompanyInfo] = useState({
+    jobTitle: '',
+    companyName: ''
+  });
   const isMobile = useIsMobile();
 
   const handleScanClick = () => {
-    // Check if we have enough input to analyze
     if ((!resumeFile && resumeText.trim() === '') || 
         (!jobDescriptionFile && jobDescriptionText.trim() === '')) {
       toast({
@@ -39,17 +43,22 @@ const Index = () => {
       return;
     }
 
-    // Show the role selection modal instead of immediately analyzing
+    setShowJobTitleCompanyForm(true);
+  };
+
+  const handleJobTitleCompanySubmit = async (jobTitle: string, companyName: string) => {
+    setJobTitleCompanyInfo({ jobTitle, companyName });
+    setShowJobTitleCompanyForm(false);
     setShowRoleModal(true);
   };
 
   const handleRoleConfirm = async (role: UserRole) => {
     setSelectedRole(role);
-    setShowRoleModal(false); // Close the modal right after selection
-    await performAnalysis(role);
+    setShowRoleModal(false);
+    await performAnalysis(role, jobTitleCompanyInfo.jobTitle, jobTitleCompanyInfo.companyName);
   };
 
-  const performAnalysis = async (userRole: UserRole) => {
+  const performAnalysis = async (userRole: UserRole, jobTitle: string, companyName: string) => {
     setIsAnalyzing(true);
     
     try {
@@ -59,11 +68,9 @@ const Index = () => {
       let resumeId: string | null = null;
       let jobId: string | null = null;
       
-      // If files were uploaded, extract their text
       if (resumeFile) {
         finalResumeText = await extractTextFromFile(resumeFile);
         
-        // Upload the resume file to storage if not already uploaded
         if (!storedFilePath) {
           storedFilePath = await uploadResumeFile(resumeFile);
           setResumeFilePath(storedFilePath);
@@ -81,25 +88,21 @@ const Index = () => {
         finalJobText = await extractTextFromFile(jobDescriptionFile);
       }
       
-      // Save the processed resume text for later use in optimization
       setFinalProcessedResumeText(finalResumeText);
-      setFinalProcessedJobText(finalJobText); // Store the job text in state too
+      setFinalProcessedJobText(finalJobText);
       console.log("Index: Setting finalProcessedResumeText, length:", finalResumeText.length);
       console.log("Index: Setting finalProcessedJobText, length:", finalJobText.length);
       
-      // Check if resume text has changed from last submission
       if (finalResumeText === lastResumeText && lastResumeId) {
         resumeId = lastResumeId;
         console.log("Using existing resume ID:", resumeId);
       }
       
-      // Check if job description text has changed from last submission
       if (finalJobText === lastJobText && lastJobId) {
         jobId = lastJobId;
         console.log("Using existing job ID:", jobId);
       }
       
-      // Call our Supabase Edge Function to perform the comparison
       const { data, error } = await supabase.functions.invoke('compare-resume', {
         body: {
           resume_text: finalResumeText,
@@ -107,7 +110,9 @@ const Index = () => {
           resume_file_path: storedFilePath,
           resume_id: resumeId,
           job_id: jobId,
-          user_role: userRole
+          user_role: userRole,
+          job_title: jobTitle,
+          company_name: companyName
         }
       });
       
@@ -115,13 +120,11 @@ const Index = () => {
         throw new Error(error.message);
       }
       
-      // Update last submitted texts and IDs
       setLastResumeText(finalResumeText);
       setLastJobText(finalJobText);
       setLastResumeId(data.resume_id);
       setLastJobId(data.job_description_id);
       
-      // Update state with the response
       setMatchScore(data.match_score);
       setReport(data.report);
       
@@ -144,7 +147,6 @@ const Index = () => {
   const canAnalyze = (!!resumeFile || resumeText.trim().length > 0) && 
                      (!!jobDescriptionFile || jobDescriptionText.trim().length > 0);
 
-  // Debug logging for resume text
   useEffect(() => {
     console.log("Index component - Current resumeText state:", 
       resumeText ? `Present (length: ${resumeText.length})` : "Not present");
@@ -168,7 +170,14 @@ const Index = () => {
         onAnalyze={handleScanClick}
       />
       
-      {/* Role Selection Modal with key prop to force remount */}
+      <JobTitleCompanyForm 
+        open={showJobTitleCompanyForm}
+        onClose={() => setShowJobTitleCompanyForm(false)}
+        onSubmit={handleJobTitleCompanySubmit}
+        jobTitle=""
+        companyName=""
+      />
+      
       {showRoleModal && (
         <RoleSelectionModal 
           key={`role-modal-${showRoleModal}`}
@@ -178,7 +187,6 @@ const Index = () => {
         />
       )}
       
-      {/* Results Section */}
       {matchScore !== null && report && (
         <ReportView 
           matchScore={matchScore} 
