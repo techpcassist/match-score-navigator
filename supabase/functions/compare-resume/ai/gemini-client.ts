@@ -1,75 +1,95 @@
 
-// Import using Deno-compatible syntax for npm packages
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "npm:@google/generative-ai";
-import { AIAnalysisResponse, UserRole } from "./types.ts";
+import { VertexAI } from "npm:@google-cloud/vertexai";
+import { UserRole } from "./types.ts";
 import { createAnalysisPrompt } from "./prompt-builder.ts";
 
+interface AIResponse {
+  success: boolean;
+  data: any;
+  error?: string;
+}
+
 /**
- * Makes an API call to Google Generative AI for enhanced resume analysis
+ * Call Google Generative AI to analyze resume against job description
  */
-export const callGenerativeAI = async (
+export async function callGenerativeAI(
   resumeText: string, 
-  jobText: string,
-  userRole?: UserRole
-): Promise<AIAnalysisResponse> => {
+  jobDescriptionText: string, 
+  userRole?: UserRole,
+  jobTitle?: string,
+  companyName?: string
+): Promise<AIResponse> {
   try {
-    console.log("Making API call to Google Generative AI...");
-    console.log("User role:", userRole || "not specified");
-    
-    // Get API key from environment variable
+    // Get API key from environment variables
     const apiKey = Deno.env.get("GOOGLE_GENERATIVE_AI_KEY");
+    
     if (!apiKey) {
-      throw new Error("Missing GOOGLE_GENERATIVE_AI_KEY environment variable");
+      throw new Error("Google Generative AI API key is not configured");
     }
     
-    // Initialize the Google Generative AI client
-    const genAI = new GoogleGenerativeAI(apiKey);
+    console.log("Creating AI prompt for analysis...");
+    const prompt = createAnalysisPrompt(resumeText, jobDescriptionText, userRole, jobTitle, companyName);
     
-    // Configure the model
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-pro",
-      safetySettings: [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    // Make API call
+    console.log("Calling Google Generative AI...");
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 8192,
         },
-        {
-          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-      ],
+      }),
     });
     
-    // Create the prompt for the analysis with role-specific instructions
-    const prompt = createAnalysisPrompt(resumeText, jobText, userRole);
+    // Check for HTTP errors
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Google AI API error:", errorText);
+      throw new Error(`Google AI API error: ${response.status} ${response.statusText}`);
+    }
     
-    // Generate content using the model
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    // Parse the response
+    const result = await response.json();
     
-    // Parse the JSON response - now with support for markdown-formatted JSON
+    // Extract the text content from the response
+    const textContent = result.candidates[0].content.parts[0].text;
+    
     try {
-      console.log("Raw response from Google Generative AI:", text);
+      // Parse the JSON content from the text
+      const jsonContent = JSON.parse(textContent);
       
-      // Remove markdown code block formatting if present
-      const jsonContent = text.replace(/```(json)?\n/g, '').replace(/\n```$/g, '');
-      
-      // The response should now be a valid JSON string
-      const parsedData = JSON.parse(jsonContent);
-      console.log("Successfully received and parsed response from Google Generative AI");
-      
+      // Return success response with parsed data
       return {
         success: true,
-        data: parsedData
+        data: jsonContent,
       };
-    } catch (parseError) {
-      console.error("Failed to parse JSON from Google Generative AI response:", parseError);
-      console.log("Raw response:", text);
-      throw new Error("Invalid response format from Generative AI");
+    } catch (jsonError) {
+      console.error("Failed to parse JSON from API response:", jsonError);
+      console.log("Raw response text:", textContent);
+      throw new Error("Failed to parse analysis results");
     }
   } catch (error) {
-    console.error("Error calling Google Generative AI:", error);
-    return { success: false, error: error.message };
+    console.error("Google Generative AI error:", error);
+    
+    // Return error response
+    return {
+      success: false,
+      data: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
-};
+}

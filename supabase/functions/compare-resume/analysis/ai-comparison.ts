@@ -18,7 +18,9 @@ export interface ComparisonResult {
 export const compareResumeToJob = async (
   resumeText: string, 
   jobDescriptionText: string,
-  userRole?: UserRole
+  userRole?: UserRole,
+  jobTitle?: string,
+  companyName?: string
 ): Promise<ComparisonResult> => {
   if (!resumeText || !jobDescriptionText) {
     return { match_score: 0, analysis: {} };
@@ -28,9 +30,11 @@ export const compareResumeToJob = async (
     // Attempt to use Google's Generative AI for enhanced analysis
     console.log("Attempting to use Google Generative AI for resume analysis...");
     console.log("User role for analysis:", userRole || "not specified");
+    console.log("Job title for analysis:", jobTitle || "not specified");
+    console.log("Company name for analysis:", companyName || "not specified");
     
-    // Make an asynchronous call to the AI API with the user role
-    const aiResponse = await callGenerativeAI(resumeText, jobDescriptionText, userRole);
+    // Make an asynchronous call to the AI API with the user role, job title, and company name
+    const aiResponse = await callGenerativeAI(resumeText, jobDescriptionText, userRole, jobTitle, companyName);
     
     // Check if AI call was successful
     if (aiResponse.success) {
@@ -57,9 +61,22 @@ export const compareResumeToJob = async (
       
       console.log(`AI parsed ${workExperienceWithIds.length} work experience entries and ${educationWithIds.length} education entries`);
       
+      // Make sure job title analysis is properly included
+      let jobTitleAnalysis = aiResponse.data.job_title_analysis || {};
+      
+      // If we have job title and company name from the request, use them
+      if (jobTitle || companyName) {
+        jobTitleAnalysis = {
+          ...jobTitleAnalysis,
+          job_title: jobTitle || jobTitleAnalysis.job_title || "unknown",
+          company_name: companyName || jobTitleAnalysis.company_name || "unknown"
+        };
+      }
+      
       // Add the parsed data to the analysis result
       const enhancedData = {
         ...aiResponse.data,
+        job_title_analysis: jobTitleAnalysis,
         parsed_data: {
           work_experience: workExperienceWithIds,
           education: educationWithIds

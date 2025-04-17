@@ -6,7 +6,13 @@ interface News {
   content: string;
 }
 
-export function createAnalysisPrompt(resumeText: string, jobText: string, userRole?: UserRole, jobTitle?: string, companyName?: string): string {
+export function createAnalysisPrompt(
+  resumeText: string, 
+  jobText: string, 
+  userRole?: UserRole, 
+  jobTitle?: string, 
+  companyName?: string
+): string {
   // Base company info if none provided
   const defaultCompanyInfo = {
     description: "A platform/community focused on empowering developers, fostering a positive environment, and providing developer tools and resources.",
@@ -100,8 +106,8 @@ export function createAnalysisPrompt(resumeText: string, jobText: string, userRo
       }
     },
     "job_title_analysis": {
-      "job_title": "string",
-      "company_name": "string",
+      "job_title": "${jobTitle || "unknown"}",
+      "company_name": "${companyName || "unknown"}",
       "key_parameters": {
         "core_technical_skills": ["skill1", "skill2", ...],
         "relevant_experience": "description",

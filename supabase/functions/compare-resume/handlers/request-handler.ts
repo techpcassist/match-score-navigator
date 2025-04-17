@@ -2,6 +2,7 @@
 import { compareResumeToJob } from "../analysis/ai-comparison.ts";
 import { DatabaseHandler } from "../database.ts";
 import { UserRole } from "../ai/types.ts";
+import { createAnalysisPrompt } from "../ai/prompt-builder.ts";
 
 // CORS headers for browser access
 const corsHeaders = {
@@ -20,7 +21,9 @@ export async function handleCompareResumeRequest(req: Request) {
       resume_file_path,
       resume_id,
       job_id,
-      user_role
+      user_role,
+      job_title,
+      company_name
     } = await req.json();
     
     // Validate inputs
@@ -57,7 +60,10 @@ export async function handleCompareResumeRequest(req: Request) {
     // Perform the comparison using the Google Generative AI approach
     console.log("Calling compareResumeToJob with Google Generative AI integration");
     console.log("Using user role:", user_role || "not specified");
-    const comparisonResult = await compareResumeToJob(resume_text, job_description_text, user_role as UserRole);
+    console.log("Job title:", job_title || "not specified");
+    console.log("Company name:", company_name || "not specified");
+    
+    const comparisonResult = await compareResumeToJob(resume_text, job_description_text, user_role as UserRole, job_title, company_name);
     
     try {
       // Store the comparison result - handle potential duplicate key errors
@@ -76,7 +82,9 @@ export async function handleCompareResumeRequest(req: Request) {
         match_score: comparisonResult.match_score,
         report: comparisonResult.analysis,
         resume_file_path,
-        user_role: user_role || null
+        user_role: user_role || null,
+        job_title: job_title || null,
+        company_name: company_name || null
       });
     } catch (dbError) {
       console.error("Database error in compare-resume function:", dbError);
@@ -90,6 +98,8 @@ export async function handleCompareResumeRequest(req: Request) {
         report: comparisonResult.analysis,
         resume_file_path,
         user_role: user_role || null,
+        job_title: job_title || null,
+        company_name: company_name || null,
         warning: "Existing comparison was retrieved"
       });
     }

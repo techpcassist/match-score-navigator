@@ -57,11 +57,13 @@ export const AnalysisWorkflow: React.FC<AnalysisWorkflowProps> = ({
           report,
           userRole: selectedRole,
           resumeText: finalProcessedResumeText,
-          jobDescriptionText: finalProcessedJobText
+          jobDescriptionText: finalProcessedJobText,
+          jobTitle: jobTitleCompanyInfo.jobTitle,
+          companyName: jobTitleCompanyInfo.companyName
         }
       });
     }
-  }, [matchScore, report, isAnalyzing, navigate, selectedRole, finalProcessedResumeText, finalProcessedJobText]);
+  }, [matchScore, report, isAnalyzing, navigate, selectedRole, finalProcessedResumeText, finalProcessedJobText, jobTitleCompanyInfo]);
 
   return (
     <>

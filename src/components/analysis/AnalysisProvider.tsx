@@ -91,6 +91,8 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
       console.log("Making API call to analyze resume...");
       console.log("Resume text length:", finalResumeText.length);
       console.log("Job description text length:", finalJobText.length);
+      console.log("Job Title:", jobTitle);
+      console.log("Company Name:", companyName);
       
       const { data, error } = await supabase.functions.invoke('compare-resume', {
         body: {
