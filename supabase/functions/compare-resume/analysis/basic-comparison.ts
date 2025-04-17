@@ -17,6 +17,10 @@ export interface BasicAnalysisResult {
       message: string;
     }>;
     suggestions: string[];
+    job_title_analysis?: {
+      job_title: string;
+      company_name: string;
+    };
   };
 }
 
@@ -51,11 +55,17 @@ export const performBasicComparison = (resumeText: string, jobDescriptionText: s
         check_name: "Basic Keywords", 
         status: matchScore > 60 ? "pass" : "warning", 
         message: `Resume contains ${matchScore}% of job keywords` 
+      },
+      {
+        check_name: "AI Analysis",
+        status: "warning",
+        message: "Advanced AI analysis unavailable - using simplified comparison"
       }
     ],
     suggestions: [
       "This is a basic fallback analysis as the AI service could not be reached.",
-      "Try adding more keywords from the job description to your resume."
+      "Try adding more keywords from the job description to your resume.",
+      "Consider trying again later when AI services are available for more detailed analysis."
     ]
   };
 

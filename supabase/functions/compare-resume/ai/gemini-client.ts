@@ -30,57 +30,115 @@ export async function callGenerativeAI(
     console.log("Creating AI prompt for analysis...");
     const prompt = createAnalysisPrompt(resumeText, jobDescriptionText, userRole, jobTitle, companyName);
     
-    // Make API call
-    console.log("Calling Google Generative AI...");
-    const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 8192,
-        },
-      }),
-    });
+    // Make API call - using the correct model endpoint
+    console.log("Calling Google Generative AI using Gemini Pro...");
     
-    // Check for HTTP errors
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Google AI API error:", errorText);
-      throw new Error(`Google AI API error: ${response.status} ${response.statusText}`);
-    }
-    
-    // Parse the response
-    const result = await response.json();
-    
-    // Extract the text content from the response
-    const textContent = result.candidates[0].content.parts[0].text;
-    
+    // First try the newer endpoint
     try {
-      // Parse the JSON content from the text
-      const jsonContent = JSON.parse(textContent);
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 8192,
+          },
+        }),
+      });
       
-      // Return success response with parsed data
-      return {
-        success: true,
-        data: jsonContent,
-      };
-    } catch (jsonError) {
-      console.error("Failed to parse JSON from API response:", jsonError);
-      console.log("Raw response text:", textContent);
-      throw new Error("Failed to parse analysis results");
+      // Check for HTTP errors
+      if (!response.ok) {
+        console.log(`Beta endpoint failed with status: ${response.status}. Falling back to v1 endpoint.`);
+        throw new Error("Beta endpoint failed");
+      }
+      
+      // Parse the response
+      const result = await response.json();
+      const textContent = result.candidates[0].content.parts[0].text;
+      
+      try {
+        // Parse the JSON content from the text
+        const jsonContent = JSON.parse(textContent);
+        return {
+          success: true,
+          data: jsonContent,
+        };
+      } catch (jsonError) {
+        console.error("Failed to parse JSON from beta API response:", jsonError);
+        throw new Error("Failed to parse results from beta endpoint");
+      }
+    } catch (betaError) {
+      console.log("Trying v1 endpoint as fallback...");
+      
+      // Fall back to the v1 endpoint
+      const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 8192,
+          },
+        }),
+      });
+      
+      // Check for HTTP errors with detailed logging
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Google AI API error:", errorText);
+        throw new Error(`Google AI API error: ${response.status} ${response.statusText}`);
+      }
+      
+      // Parse the response
+      const result = await response.json();
+      
+      // Extract the text content from the response - handle different response formats
+      let textContent;
+      try {
+        textContent = result.candidates[0].content.parts[0].text;
+      } catch (formatError) {
+        console.error("Unexpected response format:", JSON.stringify(result));
+        throw new Error("Unexpected API response format");
+      }
+      
+      try {
+        // Parse the JSON content from the text
+        const jsonContent = JSON.parse(textContent);
+        
+        // Return success response with parsed data
+        return {
+          success: true,
+          data: jsonContent,
+        };
+      } catch (jsonError) {
+        console.error("Failed to parse JSON from API response:", jsonError);
+        console.log("Raw response text:", textContent);
+        throw new Error("Failed to parse analysis results");
+      }
     }
   } catch (error) {
     console.error("Google Generative AI error:", error);

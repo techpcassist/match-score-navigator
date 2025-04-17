@@ -89,11 +89,22 @@ export const compareResumeToJob = async (
       };
     } else {
       console.log("Google Generative AI call failed, falling back to basic analysis");
+      console.error("Error details:", aiResponse.error);
       throw new Error("AI API call failed: " + aiResponse.error);
     }
   } catch (error) {
     // Fall back to a basic keyword matching approach
     console.error("Error with Google Generative AI, using fallback analysis:", error);
-    return performBasicComparison(resumeText, jobDescriptionText);
+    const basicResult = performBasicComparison(resumeText, jobDescriptionText);
+    
+    // Add job title and company to basic result if provided
+    if (jobTitle || companyName) {
+      basicResult.analysis.job_title_analysis = {
+        job_title: jobTitle || "unknown",
+        company_name: companyName || "unknown"
+      };
+    }
+    
+    return basicResult;
   }
 };
