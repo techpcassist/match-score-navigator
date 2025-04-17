@@ -3,7 +3,7 @@ import React from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import ReportView from '@/components/report/ReportView';
 import { Button } from '@/components/ui/button';
-import { FileText, FilePdf } from 'lucide-react';
+import { FileText, FileDown } from 'lucide-react';
 import { resumeExporter } from '@/utils/resumeExporter';
 import { parseContentIntoSections } from '@/utils/resumeParser';
 
@@ -46,7 +46,7 @@ const ReportPage = () => {
           onClick={handleExportPdf}
           className="flex items-center gap-2"
         >
-          <FilePdf className="h-4 w-4" />
+          <FileDown className="h-4 w-4" />
           Export PDF
         </Button>
       </div>

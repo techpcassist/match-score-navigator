@@ -61,7 +61,7 @@ export const AnalysisWorkflow: React.FC<AnalysisWorkflowProps> = ({
         }
       });
     }
-  }, [matchScore, report, isAnalyzing, navigate]);
+  }, [matchScore, report, isAnalyzing, navigate, selectedRole, finalProcessedResumeText, finalProcessedJobText]);
 
   return (
     <>
@@ -69,8 +69,8 @@ export const AnalysisWorkflow: React.FC<AnalysisWorkflowProps> = ({
         open={showJobTitleCompanyForm}
         onClose={onCloseJobTitleForm}
         onSubmit={handleJobTitleCompanySubmit}
-        jobTitle=""
-        companyName=""
+        jobTitle={jobTitleCompanyInfo.jobTitle}
+        companyName={jobTitleCompanyInfo.companyName}
       />
       
       {showRoleModal && (
