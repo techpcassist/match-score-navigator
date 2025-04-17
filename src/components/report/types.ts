@@ -1,3 +1,4 @@
+
 export interface Skill {
   term: string;
   matched: boolean;
@@ -86,6 +87,9 @@ export interface ReportData {
 export interface ReportViewProps {
   matchScore: number;
   report: ReportData;
+  userRole?: string;
+  resumeText?: string;
+  jobDescriptionText?: string;
 }
 
 export interface KeywordsSectionProps {
