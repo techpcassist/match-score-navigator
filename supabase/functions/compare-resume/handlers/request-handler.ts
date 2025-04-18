@@ -1,6 +1,8 @@
 
 import { compareResumeToJob } from "../analysis/ai-comparison.ts";
 import { DatabaseHandler } from "../database.ts";
+import { validateComparisonInput } from "./validation.ts";
+import type { ComparisonRequest, ComparisonResponse } from "./types.ts";
 import { UserRole } from "../ai/types.ts";
 
 // CORS headers for browser access
@@ -14,8 +16,8 @@ const corsHeaders = {
  */
 export async function handleCompareResumeRequest(req: Request) {
   try {
-    // Parse the request body with proper error handling
-    let reqBody;
+    // Parse the request body
+    let reqBody: ComparisonRequest;
     try {
       reqBody = await req.json();
     } catch (parseError) {
@@ -35,34 +37,19 @@ export async function handleCompareResumeRequest(req: Request) {
     } = reqBody;
     
     // Validate inputs
-    if (!resume_text || !job_description_text) {
-      return createErrorResponse(
-        "Both resume_text and job_description_text are required", 
-        400
-      );
+    const validation = validateComparisonInput(resume_text, job_description_text, user_role);
+    if (!validation.valid) {
+      return createErrorResponse(validation.error || "Invalid input", 400);
     }
     
-    // Validate user_role if provided
-    if (user_role && !['job_seeker', 'recruiter'].includes(user_role)) {
-      return createErrorResponse(
-        "user_role must be either 'job_seeker' or 'recruiter'", 
-        400
-      );
-    }
-    
-    // Create Supabase client through database handler
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.error("Missing Supabase configuration");
+    // Initialize database handler
+    const dbHandler = initializeDatabaseHandler();
+    if (!dbHandler) {
       return createErrorResponse("Server configuration error", 500);
     }
     
     try {
-      const dbHandler = new DatabaseHandler(supabaseUrl, supabaseKey);
-      
-      // Process the resume and job description data
+      // Process resume and job data
       const { resumeData, jobData } = await processResumeAndJobData(
         dbHandler, 
         resume_text, 
@@ -72,16 +59,22 @@ export async function handleCompareResumeRequest(req: Request) {
         resume_file_path
       );
       
-      // Perform the comparison using the Google Generative AI approach
+      // Perform comparison analysis
       console.log("Calling compareResumeToJob with Google Generative AI integration");
       console.log("Using user role:", user_role || "not specified");
       console.log("Job title:", job_title || "not specified");
       console.log("Company name:", company_name || "not specified");
       
-      const comparisonResult = await compareResumeToJob(resume_text, job_description_text, user_role as UserRole, job_title, company_name);
+      const comparisonResult = await compareResumeToJob(
+        resume_text, 
+        job_description_text, 
+        user_role as UserRole,
+        job_title,
+        company_name
+      );
       
       try {
-        // Store the comparison result - handle potential duplicate key errors
+        // Store comparison result
         const comparisonData = await dbHandler.storeComparison(
           resumeData.id,
           jobData.id,
@@ -89,7 +82,6 @@ export async function handleCompareResumeRequest(req: Request) {
           comparisonResult.analysis
         );
         
-        // Return the comparison result along with the stored IDs
         return createSuccessResponse({
           resume_id: resumeData.id,
           job_description_id: jobData.id,
@@ -103,9 +95,6 @@ export async function handleCompareResumeRequest(req: Request) {
         });
       } catch (dbError) {
         console.error("Database error in compare-resume function:", dbError);
-        
-        // If it's a duplicate key error, we can still return the analysis
-        // without creating a new comparison record
         return createSuccessResponse({
           resume_id: resumeData.id,
           job_description_id: jobData.id,
@@ -128,9 +117,38 @@ export async function handleCompareResumeRequest(req: Request) {
   }
 }
 
-/**
- * Process resume and job description data
- */
+function initializeDatabaseHandler(): DatabaseHandler | null {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  if (!supabaseUrl || !supabaseKey) {
+    console.error("Missing Supabase configuration");
+    return null;
+  }
+  
+  return new DatabaseHandler(supabaseUrl, supabaseKey);
+}
+
+function createErrorResponse(message: string, status: number): Response {
+  return new Response(
+    JSON.stringify({ error: message }),
+    { 
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status
+    }
+  );
+}
+
+function createSuccessResponse(data: ComparisonResponse): Response {
+  return new Response(
+    JSON.stringify(data),
+    { 
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200
+    }
+  );
+}
+
 async function processResumeAndJobData(
   dbHandler: DatabaseHandler,
   resumeText: string,
@@ -143,13 +161,12 @@ async function processResumeAndJobData(
   let jobData;
   
   try {
-    // Check if provided resume_id exists and use it
+    // Handle resume data
     if (resumeId) {
       resumeData = await dbHandler.getResumeById(resumeId);
       console.log("Using existing resume ID:", resumeId);
     }
     
-    // If resume_id was not provided or not found, check if same text exists
     if (!resumeData) {
       resumeData = await dbHandler.findResumeByText(resumeText);
       if (resumeData) {
@@ -157,13 +174,12 @@ async function processResumeAndJobData(
       }
     }
     
-    // If still no match, store as new resume
     if (!resumeData) {
       resumeData = await dbHandler.storeResume(resumeText, resumeFilePath || null);
       console.log("Created new resume with ID:", resumeData.id);
     }
     
-    // Same process for job description
+    // Handle job description data
     if (jobId) {
       jobData = await dbHandler.getJobById(jobId);
       console.log("Using existing job ID:", jobId);
@@ -186,30 +202,4 @@ async function processResumeAndJobData(
     console.error("Database operation error:", dbError);
     throw new Error("Failed to process resume and job data: " + dbError.message);
   }
-}
-
-/**
- * Create a standardized error response
- */
-function createErrorResponse(message: string, status: number): Response {
-  return new Response(
-    JSON.stringify({ error: message }),
-    { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status
-    }
-  );
-}
-
-/**
- * Create a standardized success response
- */
-function createSuccessResponse(data: any): Response {
-  return new Response(
-    JSON.stringify(data),
-    { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200
-    }
-  );
 }

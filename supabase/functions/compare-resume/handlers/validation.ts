@@ -1,15 +1,11 @@
 
 import { UserRole } from "../ai/types.ts";
 
-/**
- * Validates the input data for the resume comparison
- */
 export function validateComparisonInput(
   resumeText?: string, 
   jobText?: string, 
   userRole?: string
 ): { valid: boolean; error?: string } {
-  // Check required fields
   if (!resumeText || !jobText) {
     return { 
       valid: false, 
@@ -17,7 +13,6 @@ export function validateComparisonInput(
     };
   }
   
-  // Validate user role if provided
   if (userRole && !isValidUserRole(userRole)) {
     return { 
       valid: false, 
@@ -28,9 +23,6 @@ export function validateComparisonInput(
   return { valid: true };
 }
 
-/**
- * Validates the user role
- */
 export function isValidUserRole(role: string): role is UserRole {
   return ['job_seeker', 'recruiter'].includes(role);
 }
