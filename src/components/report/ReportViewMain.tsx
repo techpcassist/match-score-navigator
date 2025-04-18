@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ScoreDisplay } from './ScoreDisplay';
 import { ATSChecksSection } from './ATSChecksSection';
 import { KeywordsSection } from './KeywordsSection';
@@ -10,9 +10,9 @@ import { SuggestionsSection } from './SuggestionsSection';
 import { ReportActions } from './ReportActions';
 import { ReportData } from './types';
 import { JobTitleCompanyForm } from './JobTitleCompanyForm';
-import { toast } from '@/hooks/use-toast';
 import { ReportHeader } from './sections/header/ReportHeader';
 import { JobTitleInfo } from './sections/job-info/JobTitleInfo';
+import { useJobTitleForm } from '@/hooks/use-job-title-form';
 
 interface ReportViewMainProps {
   matchScore: number;
@@ -33,35 +33,12 @@ const ReportViewMain: React.FC<ReportViewMainProps> = ({
   onParseResume,
   isMobile = false
 }) => {
-  const [showJobTitleForm, setShowJobTitleForm] = useState(false);
-  const [jobTitleInfo, setJobTitleInfo] = useState({
-    jobTitle: '',
-    companyName: ''
-  });
-
-  useEffect(() => {
-    if (report && report.job_title_analysis) {
-      const { job_title, company_name } = report.job_title_analysis;
-      
-      if (job_title === "unknown" || company_name === "unknown") {
-        setShowJobTitleForm(true);
-      } else {
-        setJobTitleInfo({
-          jobTitle: job_title,
-          companyName: company_name
-        });
-      }
-    }
-  }, [report]);
-
-  const handleJobTitleSubmit = (jobTitle: string, companyName: string) => {
-    setJobTitleInfo({ jobTitle, companyName });
-    setShowJobTitleForm(false);
-    toast({
-      title: "Information Updated",
-      description: "Job title and company name have been added to your analysis.",
-    });
-  };
+  const {
+    showJobTitleForm,
+    setShowJobTitleForm,
+    jobTitleInfo,
+    handleJobTitleSubmit
+  } = useJobTitleForm(report);
 
   const validMatchScore = typeof matchScore === 'number' ? matchScore : 0;
 
