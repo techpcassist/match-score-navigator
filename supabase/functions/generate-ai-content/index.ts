@@ -34,7 +34,7 @@ serve(async (req) => {
     
     try {
       // Try Gemini 1.5 Flash first (faster model)
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent", {
+      const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -77,9 +77,9 @@ serve(async (req) => {
       const fallbackController = new AbortController();
       const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 15000);
       
-      // Try Gemini Pro as fallback
+      // Try Gemini 1.5 Pro as fallback
       try {
-        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -112,7 +112,7 @@ serve(async (req) => {
         const generatedText = result.candidates[0].content.parts[0].text;
         
         return new Response(
-          JSON.stringify({ generatedText, source: "gemini-pro" }),
+          JSON.stringify({ generatedText, source: "gemini-1.5-pro" }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (fallbackError) {

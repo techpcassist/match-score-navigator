@@ -41,7 +41,7 @@ export async function callGenerativeAI(
     
     try {
       // Try the primary model (Gemini 1.5 Flash)
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent", {
+      const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -107,9 +107,9 @@ export async function callGenerativeAI(
       const fallbackController = new AbortController();
       const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 28000); // 28 second timeout
       
-      // Fall back to Gemini Pro
+      // Fall back to Gemini 1.5 Pro
       try {
-        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
