@@ -101,6 +101,7 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
         
+        // Remove the signal property since it's not recognized in FunctionInvokeOptions
         const { data, error } = await supabase.functions.invoke('compare-resume', {
           body: {
             resume_text: finalResumeText,
@@ -111,8 +112,7 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
             user_role: userRole,
             job_title: jobTitle || "Unknown Position",
             company_name: companyName || "Unknown Company"
-          },
-          signal: controller.signal
+          }
         });
         
         // Clear the timeout
@@ -139,7 +139,7 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
           toast({
             title: "Basic analysis complete",
             description: "AI service unavailable. Basic analysis provided with limited features.",
-            variant: "warning"
+            variant: "destructive" // Changed from "warning" to "destructive" as warning is not a valid variant
           });
         } else {
           toast({
@@ -147,7 +147,7 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
             description: `Match score: ${data.matchScore}%`,
           });
         }
-      } catch (apiError) {
+      } catch (apiError: any) {
         console.error("Failed to call edge function:", apiError);
         
         // Handle request timeout
@@ -157,7 +157,7 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
         
         throw new Error("Failed to reach analysis service. Please try again later.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error analyzing resume:", error);
       toast({
         title: "Analysis failed",
