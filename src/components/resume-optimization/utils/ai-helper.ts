@@ -12,22 +12,6 @@ export const callGenerativeAI = async (prompt: string): Promise<string | null> =
   try {
     console.log("Calling AI service with prompt:", prompt.substring(0, 50) + "...");
     
-    // Check if API limits have been reached based on localStorage
-    const apiLimitReached = localStorage.getItem('ai_api_limit_reached');
-    if (apiLimitReached) {
-      const timestamp = parseInt(apiLimitReached, 10);
-      const oneHour = 60 * 60 * 1000;
-      
-      // If it's been less than an hour, use fallback without trying the API
-      if (Date.now() - timestamp < oneHour) {
-        console.log("API rate limit reached, using fallback content directly");
-        return generateFallbackContent(prompt);
-      } else {
-        // Clear the flag if it's been more than an hour
-        localStorage.removeItem('ai_api_limit_reached');
-      }
-    }
-    
     // Check if we're in a browser environment
     if (typeof window !== 'undefined') {
       try {
@@ -38,21 +22,12 @@ export const callGenerativeAI = async (prompt: string): Promise<string | null> =
         
         if (error) {
           console.error("Error calling AI service:", error);
-          
-          // Check if it's a rate limit error
-          if (error.message?.includes('429') || 
-              error.message?.includes('rate limit') || 
-              error.message?.includes('quota exceeded')) {
-            // Set flag with current timestamp
-            localStorage.setItem('ai_api_limit_reached', Date.now().toString());
-          }
-          
           throw error;
         }
         
         // Check if we got a response from the edge function
         if (data && data.generatedText) {
-          console.log("Successfully received AI-generated content from:", data.source || "edge function");
+          console.log("Successfully received AI-generated content");
           return data.generatedText;
         } else {
           console.error("Invalid response from AI service:", data);
@@ -61,15 +36,9 @@ export const callGenerativeAI = async (prompt: string): Promise<string | null> =
       } catch (supabaseError) {
         console.error("Supabase function error:", supabaseError);
         
-        // Check if it's a 429 error or quota exceeded
-        if (supabaseError?.message?.includes('429') || 
-            supabaseError?.message?.includes('rate limit') || 
-            supabaseError?.message?.includes('quota exceeded')) {
-          // Set flag with current timestamp
-          localStorage.setItem('ai_api_limit_reached', Date.now().toString());
-        }
-        
-        throw supabaseError;
+        // Create a fallback for cases where the edge function fails
+        console.log("Using fallback content due to edge function error");
+        return generateFallbackContent(prompt);
       }
     } else {
       // Fallback to local mock for development

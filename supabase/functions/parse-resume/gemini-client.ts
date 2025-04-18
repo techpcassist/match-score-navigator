@@ -10,7 +10,7 @@ export function initializeGeminiClient(apiKey: string) {
   
   // Configure the model - using the most capable model for this parsing task
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro", // Using the most capable model for complex parsing
+    model: "gemini-1.5-flash", // Use a more consistent and faster model
     safetySettings: [
       {
         category: HarmCategory.HARM_CATEGORY_HARASSMENT,

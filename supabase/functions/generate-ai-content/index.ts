@@ -2,26 +2,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+const GOOGLE_API_KEY = Deno.env.get("GOOGLE_GENERATIVE_AI_KEY");
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-// Fallback content generator when API calls fail
-const generateFallbackContent = (prompt: string): string => {
-  console.log("Using fallback content generator");
-  
-  // Check prompt type and return appropriate fallback content
-  if (prompt.includes("job duty") || prompt.includes("achievement")) {
-    return "Implemented an automated testing framework that reduced regression bugs by 42% and improved deployment velocity by 35%.";
-  } else if (prompt.includes("Enhance the following")) {
-    return "• Spearheaded the development of a cloud-based analytics platform that increased client reporting efficiency by 65%\n• Implemented CI/CD pipelines that decreased deployment time by 50% and reduced integration errors by 78%\n• Led cross-functional team of 8 engineers to deliver a mission-critical system migration with zero downtime\n• Designed scalable microservices architecture that improved system performance by 40% and reduced cloud costs by 25%";
-  } else if (prompt.includes("tailored suggestions") || prompt.includes("specific responsibilities")) {
-    return "Developed scalable solutions that improved system performance by 35%\nImplemented automated testing protocols that reduced bug rates by 40%\nOptimized database queries resulting in 50% faster response times\nLed cross-functional team meetings to improve project coordination\nDeployed CI/CD pipelines that streamlined the development workflow";
-  }
-  
-  // Generic fallback
-  return "• Led strategic initiatives that increased operational efficiency by 30%\n• Developed innovative solutions to complex business challenges\n• Collaborated with cross-functional teams to deliver high-quality results\n• Implemented best practices that improved overall performance metrics";
 };
 
 serve(async (req) => {
@@ -31,115 +16,123 @@ serve(async (req) => {
   }
 
   try {
-    // Extract the prompt from the request body
     const { prompt } = await req.json();
     
-    if (!prompt || typeof prompt !== 'string') {
-      return new Response(
-        JSON.stringify({ error: 'Invalid prompt. Please provide a valid text prompt.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!prompt) {
+      throw new Error("Missing required parameter: prompt");
     }
-
-    // Get API key from environment variables
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!apiKey) {
-      console.log("Missing OpenAI API key, using fallback content");
-      const fallbackText = generateFallbackContent(prompt);
-      return new Response(
-        JSON.stringify({ generatedText: fallbackText, source: 'fallback' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    
+    if (!GOOGLE_API_KEY) {
+      throw new Error("GOOGLE_GENERATIVE_AI_KEY is not configured");
     }
-
+    
+    console.log("Generating AI content with prompt:", prompt.substring(0, 50) + "...");
+    
+    // Set a timeout to avoid hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    
     try {
-      // Call OpenAI API to generate content
-      const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
+      // Try Gemini 1.5 Flash first (faster model)
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          "x-goog-api-key": GOOGLE_API_KEY,
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { 
-              role: 'system', 
-              content: 'You are a professional resume writing assistant that helps job seekers create impressive resume content. Provide concise, impactful responses that highlight achievements with metrics when possible.' 
-            },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.7,
-          max_tokens: 250,
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 2048,
+            topP: 0.8,
+            topK: 40,
+          },
         }),
+        signal: controller.signal,
       });
-
-      if (!openAIResponse.ok) {
-        // Check if it's a rate limit error (status 429)
-        if (openAIResponse.status === 429) {
-          console.log("OpenAI API rate limit reached, using fallback content");
-          const fallbackText = generateFallbackContent(prompt);
-          return new Response(
-            JSON.stringify({ 
-              generatedText: fallbackText, 
-              source: 'fallback',
-              rateLimited: true
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Primary model failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (!result.candidates?.[0]?.content?.parts?.[0]?.text) {
+        throw new Error("Invalid response structure from primary model");
+      }
+      
+      const generatedText = result.candidates[0].content.parts[0].text;
+      
+      return new Response(
+        JSON.stringify({ generatedText, source: "gemini-1.5-flash" }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (primaryError) {
+      console.error("Primary model failed, trying fallback:", primaryError);
+      
+      // Create a new timeout for the fallback request
+      const fallbackController = new AbortController();
+      const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 15000);
+      
+      // Try Gemini Pro as fallback
+      try {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": GOOGLE_API_KEY,
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 2048,
+              topP: 0.8,
+              topK: 40,
+            },
+          }),
+          signal: fallbackController.signal,
+        });
+        
+        clearTimeout(fallbackTimeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Fallback model failed: ${response.status}`);
         }
         
-        throw new Error(`OpenAI API responded with status: ${openAIResponse.status}`);
+        const result = await response.json();
+        
+        if (!result.candidates?.[0]?.content?.parts?.[0]?.text) {
+          throw new Error("Invalid response structure from fallback model");
+        }
+        
+        const generatedText = result.candidates[0].content.parts[0].text;
+        
+        return new Response(
+          JSON.stringify({ generatedText, source: "gemini-pro" }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (fallbackError) {
+        clearTimeout(fallbackTimeoutId);
+        console.error("All models failed:", fallbackError);
+        throw fallbackError;
       }
-      
-      const data = await openAIResponse.json();
-      
-      if (!data.choices || !data.choices[0]) {
-        throw new Error('Invalid response from OpenAI');
-      }
-      
-      const generatedText = data.choices[0].message.content.trim();
-
-      return new Response(
-        JSON.stringify({ generatedText, source: 'openai' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } catch (openAIError) {
-      console.error('OpenAI API error:', openAIError);
-      
-      // Use fallback content generation
-      const fallbackText = generateFallbackContent(prompt);
-      return new Response(
-        JSON.stringify({ generatedText: fallbackText, source: 'fallback' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
   } catch (error) {
-    console.error('Error in generate-ai-content function:', error);
-    
-    let errorMessage = 'An unknown error occurred';
-    let fallbackText = '';
-    
-    try {
-      // Try to extract prompt from request and generate fallback content
-      const { prompt } = await req.json();
-      if (prompt && typeof prompt === 'string') {
-        fallbackText = generateFallbackContent(prompt);
-      }
-    } catch (_) {
-      // Ignore errors in fallback content generation
-    }
-    
-    if (fallbackText) {
-      return new Response(
-        JSON.stringify({ generatedText: fallbackText, source: 'fallback' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    console.error("Error generating AI content:", error);
     
     return new Response(
-      JSON.stringify({ error: error.message || errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        error: "Failed to generate AI content", 
+        details: error instanceof Error ? error.message : String(error) 
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 });

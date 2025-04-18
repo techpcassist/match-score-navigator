@@ -33,6 +33,7 @@ export async function callGenerativeAI(
     
     // Make API call with better error handling
     console.log("Calling Google Generative AI using Gemini 1.5...");
+    console.log("API Key exists and length:", apiKey ? apiKey.length : "not found");
     
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
@@ -40,7 +41,7 @@ export async function callGenerativeAI(
     
     try {
       // Try the primary model (Gemini 1.5 Flash)
-      const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent", {
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,7 +72,7 @@ export async function callGenerativeAI(
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Primary model failed with status: ${response.status}. Error: ${errorText}`);
-        throw new Error(`Primary model failed: ${response.status}`);
+        throw new Error(`Primary model failed: ${response.status} - ${errorText}`);
       }
       
       // Parse the response
@@ -108,7 +109,7 @@ export async function callGenerativeAI(
       
       // Fall back to Gemini Pro
       try {
-        const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent", {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -138,7 +139,7 @@ export async function callGenerativeAI(
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Fallback model failed with status: ${response.status}. Error: ${errorText}`);
-          throw new Error(`Fallback model failed: ${response.status}`);
+          throw new Error(`Fallback model failed: ${response.status} - ${errorText}`);
         }
         
         const result = await response.json();
