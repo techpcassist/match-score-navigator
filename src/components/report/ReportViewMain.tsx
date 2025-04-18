@@ -23,7 +23,7 @@ interface ReportViewMainProps {
   isMobile?: boolean;
 }
 
-export const ReportViewMain: React.FC<ReportViewMainProps> = ({
+const ReportViewMain: React.FC<ReportViewMainProps> = ({
   matchScore,
   report,
   userRole,
@@ -109,7 +109,7 @@ export const ReportViewMain: React.FC<ReportViewMainProps> = ({
                 <div>
                   <h4 className="text-sm font-semibold">Core Technical Skills</h4>
                   <ul className="text-sm mt-1 space-y-1">
-                    {report.job_title_analysis.key_parameters.core_technical_skills?.map((skill, index) => (
+                    {report.job_title_analysis.key_parameters.core_technical_skills?.map((skill: string, index: number) => (
                       <li key={index} className="text-muted-foreground">• {skill}</li>
                     ))}
                   </ul>
@@ -118,7 +118,7 @@ export const ReportViewMain: React.FC<ReportViewMainProps> = ({
                 <div>
                   <h4 className="text-sm font-semibold">Essential Soft Skills</h4>
                   <ul className="text-sm mt-1 space-y-1">
-                    {report.job_title_analysis.key_parameters.essential_soft_skills?.map((skill, index) => (
+                    {report.job_title_analysis.key_parameters.essential_soft_skills?.map((skill: string, index: number) => (
                       <li key={index} className="text-muted-foreground">• {skill}</li>
                     ))}
                   </ul>

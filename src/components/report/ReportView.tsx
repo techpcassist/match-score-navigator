@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ReportViewMain } from './ReportViewMain';
+import ReportViewMain from './ReportViewMain';
 import ReportViewDetails from './ReportViewDetails';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ResumeParsingModal from '../resume-optimization/parser/ResumeParsingModal';
