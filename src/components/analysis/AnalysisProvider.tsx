@@ -17,6 +17,7 @@ interface AnalysisContextType {
   lastJobText: string;
   lastResumeId: string | null;
   lastJobId: string | null;
+  serviceStatus: 'AI_GENERATED' | 'FALLBACK_GENERATED' | null;
 }
 
 interface AnalysisProviderProps {
@@ -46,6 +47,7 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
   const [lastJobId, setLastJobId] = useState<string | null>(null);
   const [finalProcessedResumeText, setFinalProcessedResumeText] = useState('');
   const [finalProcessedJobText, setFinalProcessedJobText] = useState('');
+  const [serviceStatus, setServiceStatus] = useState<'AI_GENERATED' | 'FALLBACK_GENERATED' | null>(null);
 
   const performAnalysis = async (userRole: UserRole, jobTitle: string, companyName: string) => {
     setIsAnalyzing(true);
@@ -95,6 +97,10 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
       console.log("Company Name:", companyName);
       
       try {
+        // Add a timeout to the API call
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+        
         const { data, error } = await supabase.functions.invoke('compare-resume', {
           body: {
             resume_text: finalResumeText,
@@ -105,8 +111,12 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
             user_role: userRole,
             job_title: jobTitle || "Unknown Position",
             company_name: companyName || "Unknown Company"
-          }
+          },
+          signal: controller.signal
         });
+        
+        // Clear the timeout
+        clearTimeout(timeoutId);
         
         if (error) {
           console.error("Error from API:", error);
@@ -117,18 +127,34 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
         
         setLastResumeText(finalResumeText);
         setLastJobText(finalJobText);
-        setLastResumeId(data.resume_id);
-        setLastJobId(data.job_description_id);
+        setLastResumeId(data.resumeId);
+        setLastJobId(data.jobDescriptionId);
         
-        setMatchScore(data.match_score);
+        setMatchScore(data.matchScore);
         setReport(data.report);
+        setServiceStatus(data.serviceStatus || null);
         
-        toast({
-          title: "Analysis complete",
-          description: `Match score: ${data.match_score}%`,
-        });
+        // Show a toast based on whether AI or fallback was used
+        if (data.serviceStatus === 'FALLBACK_GENERATED') {
+          toast({
+            title: "Basic analysis complete",
+            description: "AI service unavailable. Basic analysis provided with limited features.",
+            variant: "warning"
+          });
+        } else {
+          toast({
+            title: "Analysis complete",
+            description: `Match score: ${data.matchScore}%`,
+          });
+        }
       } catch (apiError) {
         console.error("Failed to call edge function:", apiError);
+        
+        // Handle request timeout
+        if (apiError.name === 'AbortError') {
+          throw new Error("Analysis request timed out. Please try again with a shorter resume and job description.");
+        }
+        
         throw new Error("Failed to reach analysis service. Please try again later.");
       }
     } catch (error) {
@@ -155,7 +181,8 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
       lastResumeText,
       lastJobText,
       lastResumeId,
-      lastJobId
+      lastJobId,
+      serviceStatus
     }}>
       {children}
     </AnalysisContext.Provider>

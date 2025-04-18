@@ -35,7 +35,16 @@ export const compareResumeToJob = async (
     console.log("Company name for analysis:", companyName || "not specified");
     
     // Make an asynchronous call to the AI API with the user role, job title, and company name
-    const aiResponse = await callGenerativeAI(resumeText, jobDescriptionText, userRole, jobTitle, companyName);
+    // Add timeout protection
+    const aiResponsePromise = callGenerativeAI(resumeText, jobDescriptionText, userRole, jobTitle, companyName);
+    
+    // Create a timeout promise
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("AI API call timed out after 30 seconds")), 30000);
+    });
+    
+    // Race the promises to handle timeout
+    const aiResponse = await Promise.race([aiResponsePromise, timeoutPromise]) as Awaited<typeof aiResponsePromise>;
     
     // Check if AI call was successful
     if (aiResponse.success && aiResponse.data) {

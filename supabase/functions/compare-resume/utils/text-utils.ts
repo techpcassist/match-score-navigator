@@ -1,44 +1,70 @@
 
 /**
- * Text processing utility functions for resume analysis
+ * Utility functions for text processing
  */
 
 /**
- * Cleans text by converting to lowercase and replacing special characters with spaces
+ * Extracts basic keywords from text
  */
-export const cleanText = (text: string): string => {
-  return text.toLowerCase().replace(/[^\w\s]/g, ' ');
+export const extractBasicKeywords = (text: string): string[] => {
+  if (!text) return [];
+  
+  const words = text.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 3);
+  
+  // Remove common words
+  const commonWords = [
+    'the', 'and', 'that', 'have', 'for', 'not', 'with', 'you', 'this', 'but',
+    'his', 'from', 'they', 'she', 'will', 'would', 'there', 'their', 'what',
+    'about', 'which', 'when', 'make', 'like', 'time', 'just', 'know', 'take',
+    'person', 'year', 'your', 'good', 'some', 'could', 'them', 'than', 'then',
+    'look', 'only', 'come', 'over', 'think', 'also', 'back', 'after', 'work',
+    'first', 'well', 'even', 'want', 'because', 'these', 'give', 'most'
+  ];
+  
+  // Return unique keywords not in common words
+  return [...new Set(words.filter(word => !commonWords.includes(word)))];
 };
 
 /**
- * Extracts basic keywords from text for fallback analysis
+ * Extracts sections from resume text
  */
-export const extractBasicKeywords = (text: string): string[] => {
-  // Convert to lowercase and remove special characters
-  const cleanedText = cleanText(text);
+export const extractResumeSections = (text: string): Record<string, string> => {
+  const sections: Record<string, string> = {
+    summary: '',
+    experience: '',
+    education: '',
+    skills: '',
+    projects: '',
+    certifications: '',
+    other: ''
+  };
   
-  // Common stop words to filter out
-  const stopWords = new Set([
-    'and', 'the', 'of', 'to', 'a', 'in', 'for', 'is', 'on', 'that', 'by', 
-    'this', 'with', 'i', 'you', 'it', 'not', 'or', 'be', 'are', 'from', 'at', 
-    'as', 'your', 'have', 'more', 'has', 'an', 'was', 'we', 'will', 'can', 'all', 'use'
-  ]);
+  // Simple section detection based on common section headings
+  const lines = text.split('\n');
+  let currentSection = 'other';
   
-  // Extract words, filter stop words and short words
-  const words = cleanedText.split(/\s+/).filter(word => 
-    word.length > 2 && !stopWords.has(word)
-  );
+  for (const line of lines) {
+    const lowercaseLine = line.toLowerCase().trim();
+    
+    if (lowercaseLine.includes('summary') || lowercaseLine.includes('objective') || lowercaseLine.includes('profile')) {
+      currentSection = 'summary';
+    } else if (lowercaseLine.includes('experience') || lowercaseLine.includes('employment') || lowercaseLine.includes('work history')) {
+      currentSection = 'experience';
+    } else if (lowercaseLine.includes('education') || lowercaseLine.includes('qualification') || lowercaseLine.includes('academic')) {
+      currentSection = 'education';
+    } else if (lowercaseLine.includes('skill') || lowercaseLine.includes('expertise') || lowercaseLine.includes('competencies')) {
+      currentSection = 'skills';
+    } else if (lowercaseLine.includes('project') || lowercaseLine.includes('portfolio')) {
+      currentSection = 'projects';
+    } else if (lowercaseLine.includes('certification') || lowercaseLine.includes('license') || lowercaseLine.includes('certificate')) {
+      currentSection = 'certifications';
+    }
+    
+    sections[currentSection] += line + '\n';
+  }
   
-  // Count frequency of each word
-  const wordFreq: Record<string, number> = {};
-  words.forEach(word => {
-    wordFreq[word] = (wordFreq[word] || 0) + 1;
-  });
-  
-  // Sort by frequency
-  const sortedWords = Object.entries(wordFreq)
-    .sort((a, b) => b[1] - a[1])
-    .map(entry => entry[0]);
-  
-  return sortedWords.slice(0, 50); // Return top 50 keywords
+  return sections;
 };

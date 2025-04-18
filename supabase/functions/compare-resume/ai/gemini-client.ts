@@ -10,6 +10,7 @@ interface AIResponse {
 
 /**
  * Call Google Generative AI to analyze resume against job description
+ * with improved error handling and fallbacks
  */
 export async function callGenerativeAI(
   resumeText: string, 
@@ -23,6 +24,7 @@ export async function callGenerativeAI(
     const apiKey = Deno.env.get("GOOGLE_GENERATIVE_AI_KEY");
     
     if (!apiKey) {
+      console.error("Google Generative AI API key is not configured");
       throw new Error("Google Generative AI API key is not configured");
     }
     
@@ -31,6 +33,10 @@ export async function callGenerativeAI(
     
     // Make API call with better error handling
     console.log("Calling Google Generative AI using Gemini 1.5...");
+    
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 28000); // 28 second timeout
     
     try {
       // Try the primary model (Gemini 1.5 Flash)
@@ -55,15 +61,17 @@ export async function callGenerativeAI(
             maxOutputTokens: 8192,
           },
         }),
-        // Add timeout to prevent hanging requests
-        signal: AbortSignal.timeout(30000), // 30 second timeout
+        signal: controller.signal,
       });
+      
+      // Clear timeout if the request completes
+      clearTimeout(timeoutId);
       
       // Check for HTTP errors
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Primary model failed with status: ${response.status}. Error: ${errorText}`);
-        throw new Error("Primary model failed");
+        throw new Error(`Primary model failed: ${response.status}`);
       }
       
       // Parse the response
@@ -90,7 +98,13 @@ export async function callGenerativeAI(
         throw new Error("Failed to parse results from primary model");
       }
     } catch (primaryError) {
+      // Clear timeout if it's still active
+      clearTimeout(timeoutId);
       console.log("Primary model failed, trying fallback model...", primaryError);
+      
+      // Create a new controller for the fallback request
+      const fallbackController = new AbortController();
+      const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 28000); // 28 second timeout
       
       // Fall back to Gemini Pro
       try {
@@ -115,14 +129,16 @@ export async function callGenerativeAI(
               maxOutputTokens: 8192,
             },
           }),
-          // Add timeout to prevent hanging requests
-          signal: AbortSignal.timeout(30000), // 30 second timeout
+          signal: fallbackController.signal,
         });
+        
+        // Clear timeout if the request completes
+        clearTimeout(fallbackTimeoutId);
         
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Fallback model failed with status: ${response.status}. Error: ${errorText}`);
-          throw new Error("Fallback model failed");
+          throw new Error(`Fallback model failed: ${response.status}`);
         }
         
         const result = await response.json();
@@ -147,6 +163,8 @@ export async function callGenerativeAI(
           throw new Error("Failed to parse results from fallback model");
         }
       } catch (fallbackError) {
+        // Clear timeout if it's still active
+        clearTimeout(fallbackTimeoutId);
         console.error("All models failed:", fallbackError);
         throw fallbackError;
       }

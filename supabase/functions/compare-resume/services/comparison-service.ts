@@ -26,6 +26,7 @@ export interface ComparisonResult {
   userRole?: string;
   jobTitle?: string;
   companyName?: string;
+  isAIGenerated: boolean;
 }
 
 export class ComparisonService {
@@ -42,19 +43,53 @@ export class ComparisonService {
       input.resumeFilePath
     );
 
-    // Perform AI comparison
-    console.log("Calling compareResumeToJob with Google Generative AI integration");
+    // Perform AI comparison with timeout protection
+    console.log("Calling compareResumeToJob with enhanced error handling");
     console.log("Using user role:", input.userRole || "not specified");
     console.log("Job title:", input.jobTitle || "not specified");
     console.log("Company name:", input.companyName || "not specified");
 
-    const comparisonResult = await compareResumeToJob(
-      input.resumeText,
-      input.jobDescriptionText,
-      input.userRole,
-      input.jobTitle,
-      input.companyName
-    );
+    // Add a timeout for the entire comparison operation
+    let isAIGenerated = true;
+    let comparisonResult;
+    let comparisonError;
+    
+    try {
+      // Create a promise with timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Comparison timed out after 40 seconds")), 40000);
+      });
+      
+      // Race the comparison with the timeout
+      comparisonResult = await Promise.race([
+        compareResumeToJob(
+          input.resumeText,
+          input.jobDescriptionText,
+          input.userRole,
+          input.jobTitle,
+          input.companyName
+        ),
+        timeoutPromise
+      ]) as Awaited<ReturnType<typeof compareResumeToJob>>;
+    } catch (error) {
+      console.error("Error in comparison process:", error);
+      comparisonError = error;
+      // Let it fall through to use the fallback
+      isAIGenerated = false;
+    }
+
+    // If we don't have a result, generate a basic fallback
+    if (!comparisonResult) {
+      console.log("No comparison result, generating basic fallback");
+      const { performBasicComparison } = await import("../analysis/basic-comparison.ts");
+      comparisonResult = performBasicComparison(
+        input.resumeText,
+        input.jobDescriptionText,
+        input.jobTitle,
+        input.companyName
+      );
+      isAIGenerated = false;
+    }
 
     try {
       // Store comparison result
@@ -74,7 +109,8 @@ export class ComparisonService {
         resumeFilePath: input.resumeFilePath,
         userRole: input.userRole || null,
         jobTitle: input.jobTitle || null,
-        companyName: input.companyName || null
+        companyName: input.companyName || null,
+        isAIGenerated
       };
     } catch (dbError) {
       console.error("Database error in compare-resume function:", dbError);
@@ -87,7 +123,10 @@ export class ComparisonService {
         userRole: input.userRole || null,
         jobTitle: input.jobTitle || null,
         companyName: input.companyName || null,
-        warning: "Existing comparison was retrieved"
+        warning: comparisonError ? 
+          `AI service error: ${comparisonError.message}` : 
+          "Existing comparison was retrieved",
+        isAIGenerated
       };
     }
   }

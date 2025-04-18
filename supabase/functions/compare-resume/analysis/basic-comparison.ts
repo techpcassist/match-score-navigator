@@ -21,11 +21,60 @@ export interface BasicAnalysisResult {
       job_title: string;
       company_name: string;
     };
+    section_analysis?: {
+      education?: string;
+      experience?: string;
+      skills?: string;
+      summary?: string;
+    };
+    parsed_data?: {
+      work_experience: any[];
+      education: any[];
+    };
   };
 }
 
+// Common skills to check for in resumes
+const commonHardSkills = [
+  "javascript", "python", "java", "c++", "c#", "typescript", 
+  "react", "angular", "vue", "node.js", "express", "django", 
+  "mongodb", "sql", "postgresql", "mysql", "aws", "azure", 
+  "google cloud", "docker", "kubernetes", "github", "git", 
+  "machine learning", "data science", "ai", "blockchain"
+];
+
+const commonSoftSkills = [
+  "leadership", "communication", "teamwork", "problem solving", 
+  "critical thinking", "time management", "project management", 
+  "adaptability", "creativity", "attention to detail"
+];
+
+/**
+ * Function to extract keywords from text
+ */
+export const extractBasicKeywords = (text: string): string[] => {
+  if (!text) return [];
+  
+  // Simple keyword extraction logic
+  const lowercaseText = text.toLowerCase();
+  
+  // Check for hard skills
+  const matchedHardSkills = commonHardSkills.filter(skill => 
+    lowercaseText.includes(skill.toLowerCase())
+  );
+  
+  // Check for soft skills
+  const matchedSoftSkills = commonSoftSkills.filter(skill => 
+    lowercaseText.includes(skill.toLowerCase())
+  );
+  
+  // Combine both skill types
+  return [...new Set([...matchedHardSkills, ...matchedSoftSkills])];
+};
+
 /**
  * Performs a simple keyword-based comparison when AI analysis fails
+ * with enhanced fallback data
  */
 export const performBasicComparison = (resumeText: string, jobDescriptionText: string, jobTitle?: string, companyName?: string): BasicAnalysisResult => {
   console.log("Using fallback basic analysis method");
@@ -41,14 +90,27 @@ export const performBasicComparison = (resumeText: string, jobDescriptionText: s
   
   const matchScore = Math.min(100, Math.round((matchedKeywords.length / (jobKeywords.length || 1)) * 100));
   
-  // Create a minimal analysis structure
+  // Identify hard skills
+  const hardSkills = commonHardSkills.filter(skill => 
+    jobDescriptionText.toLowerCase().includes(skill)
+  ).map(term => ({
+    term,
+    matched: resumeText.toLowerCase().includes(term)
+  }));
+  
+  // Identify soft skills
+  const softSkills = commonSoftSkills.filter(skill => 
+    jobDescriptionText.toLowerCase().includes(skill)
+  ).map(term => ({
+    term,
+    matched: resumeText.toLowerCase().includes(term)
+  }));
+  
+  // Create a comprehensive fallback analysis
   const basicAnalysis = {
     keywords: {
-      hard_skills: jobKeywords.slice(0, 10).map(term => ({
-        term,
-        matched: resumeText.toLowerCase().includes(term)
-      })),
-      soft_skills: []
+      hard_skills: hardSkills,
+      soft_skills: softSkills
     },
     ats_checks: [
       { 
@@ -63,14 +125,24 @@ export const performBasicComparison = (resumeText: string, jobDescriptionText: s
       }
     ],
     suggestions: [
-      "This is a basic fallback analysis as the AI service could not be reached.",
-      "Your resume has been analyzed using a simplified keyword matching algorithm.",
-      "Try adding more keywords from the job description to your resume.",
-      "Consider trying again later when AI services are available for more detailed analysis."
+      "Add more keywords from the job description to your resume to improve matching.",
+      "Ensure your resume includes specific skills mentioned in the job description.",
+      "Consider formatting your resume to be more ATS-friendly with clear section headings.",
+      "Try again later when AI services are available for more detailed analysis."
     ],
     job_title_analysis: {
       job_title: jobTitle || "Unknown Position",
       company_name: companyName || "Unknown Company"
+    },
+    section_analysis: {
+      experience: "Basic analysis performed. Add relevant experience that matches the job description.",
+      education: "Ensure your education section highlights relevant qualifications.",
+      skills: `Your resume matches ${matchScore}% of the required skills. Consider adding more of the missing skills.`,
+      summary: "A strong summary highlighting your fit for this position is recommended."
+    },
+    parsed_data: {
+      work_experience: [],
+      education: []
     }
   };
 

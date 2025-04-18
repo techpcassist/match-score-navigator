@@ -7,6 +7,7 @@ import { ComparisonService } from "../services/comparison-service.ts";
 
 /**
  * Main request handler for the compare-resume function
+ * with improved error handling and timeouts
  */
 export async function handleCompareResumeRequest(req: Request) {
   try {
@@ -42,10 +43,18 @@ export async function handleCompareResumeRequest(req: Request) {
       return createErrorResponse("Server configuration error", 500);
     }
     
+    // Wrap the entire operation in a timeout
     try {
-      // Create comparison service and perform comparison
+      // Create a promise with timeout for the whole operation
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("Request timed out after 50 seconds")), 50000);
+      });
+      
+      // Create comparison service
       const comparisonService = new ComparisonService(dbHandler);
-      const result = await comparisonService.performComparison({
+      
+      // Execute the comparison with timeout
+      const resultPromise = comparisonService.performComparison({
         resumeText: resume_text,
         jobDescriptionText: job_description_text,
         resumeFilePath: resume_file_path,
@@ -56,13 +65,26 @@ export async function handleCompareResumeRequest(req: Request) {
         companyName: company_name
       });
       
+      // Race the comparison with the timeout
+      const result = await Promise.race([resultPromise, timeoutPromise]);
+      
       return createSuccessResponse(result);
     } catch (error) {
       console.error("Error in compare-resume function:", error);
-      return createErrorResponse(error.message, 500);
+      const isTimeout = error.message && error.message.includes("timed out");
+      
+      // Special handling for timeouts
+      if (isTimeout) {
+        return createErrorResponse(
+          "Request timed out. The analysis is taking longer than expected. Please try again with a shorter resume and job description.",
+          504 // Gateway Timeout
+        );
+      }
+      
+      return createErrorResponse(error.message || "Unknown error", 500);
     }
   } catch (error) {
-    console.error("Error in compare-resume function:", error);
-    return createErrorResponse(error.message, 500);
+    console.error("Unhandled error in compare-resume function:", error);
+    return createErrorResponse(error.message || "Server error", 500);
   }
 }
