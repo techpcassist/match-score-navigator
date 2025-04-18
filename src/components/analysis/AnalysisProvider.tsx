@@ -101,7 +101,7 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
         
-        // Remove the signal property since it's not recognized in FunctionInvokeOptions
+        // Make API call to Supabase function
         const { data, error } = await supabase.functions.invoke('compare-resume', {
           body: {
             resume_text: finalResumeText,
@@ -130,21 +130,25 @@ export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({
         setLastResumeId(data.resumeId);
         setLastJobId(data.jobDescriptionId);
         
-        setMatchScore(data.matchScore);
+        // Ensure matchScore is a number and not undefined or null
+        const numericMatchScore = typeof data.matchScore === 'number' ? data.matchScore : 0;
+        console.log("Setting match score:", numericMatchScore, "Original:", data.matchScore);
+        
+        setMatchScore(numericMatchScore);
         setReport(data.report);
-        setServiceStatus(data.serviceStatus || null);
+        setServiceStatus(data.isAIGenerated ? 'AI_GENERATED' : 'FALLBACK_GENERATED');
         
         // Show a toast based on whether AI or fallback was used
-        if (data.serviceStatus === 'FALLBACK_GENERATED') {
+        if (!data.isAIGenerated) {
           toast({
             title: "Basic analysis complete",
             description: "AI service unavailable. Basic analysis provided with limited features.",
-            variant: "destructive" // Changed from "warning" to "destructive" as warning is not a valid variant
+            variant: "destructive"
           });
         } else {
           toast({
             title: "Analysis complete",
-            description: `Match score: ${data.matchScore}%`,
+            description: `Match score: ${numericMatchScore}%`,
           });
         }
       } catch (apiError: any) {

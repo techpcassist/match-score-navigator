@@ -38,6 +38,11 @@ const ReportViewMain: React.FC<ReportViewMainProps> = ({
     companyName: ''
   });
 
+  // Log the received match score for debugging
+  useEffect(() => {
+    console.log('ReportViewMain received matchScore:', matchScore);
+  }, [matchScore]);
+
   // Check if job title and company name are available in the report
   useEffect(() => {
     if (report && report.job_title_analysis) {
@@ -63,9 +68,12 @@ const ReportViewMain: React.FC<ReportViewMainProps> = ({
     });
   };
 
+  // Ensure match score is a valid number
+  const validMatchScore = typeof matchScore === 'number' ? matchScore : 0;
+
   return (
     <div className="space-y-6 md:space-y-8">
-      <ScoreDisplay matchScore={matchScore} />
+      <ScoreDisplay matchScore={validMatchScore} />
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <h2 className="text-xl md:text-2xl font-bold tracking-tight mb-2 md:mb-0">Analysis Report</h2>

@@ -31,6 +31,12 @@ const ReportView: React.FC<ReportViewProps> = ({
   const [parsedResumeData, setParsedResumeData] = React.useState<any>(null);
   const isMobile = useIsMobile();
 
+  // Convert matchScore to a number if it's a string
+  const numericMatchScore = typeof matchScore === 'string' ? parseInt(matchScore, 10) : matchScore;
+  
+  // Ensure we have a valid number (defaulting to 0 if NaN)
+  const validMatchScore = isNaN(numericMatchScore) ? 0 : numericMatchScore;
+
   // Handle parse resume
   const handleParseResume = () => {
     if (!resumeText) return;
@@ -59,6 +65,8 @@ const ReportView: React.FC<ReportViewProps> = ({
   // Show an error message if report is missing expected data
   const hasError = !report || !report.keywords || !report.suggestions;
   
+  console.log('ReportView: Match Score:', validMatchScore, 'Original:', matchScore);
+  
   return (
     <div className="space-y-6">
       {hasError ? (
@@ -72,7 +80,7 @@ const ReportView: React.FC<ReportViewProps> = ({
           
           <TabsContent value="overview">
             <ReportViewMain
-              matchScore={matchScore}
+              matchScore={validMatchScore}
               report={report}
               userRole={userRole}
               resumeText={resumeText}

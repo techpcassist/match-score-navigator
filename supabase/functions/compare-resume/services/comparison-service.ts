@@ -91,12 +91,19 @@ export class ComparisonService {
       isAIGenerated = false;
     }
 
+    // Ensure match_score is a number between 0-100
+    const validatedMatchScore = typeof comparisonResult.match_score === 'number' 
+      ? Math.min(100, Math.max(0, comparisonResult.match_score)) 
+      : 0;
+    
+    console.log("Final match score:", validatedMatchScore, "Original:", comparisonResult.match_score);
+
     try {
       // Store comparison result
       const comparisonData = await this.dbHandler.storeComparison(
         resumeData.id,
         jobData.id,
-        comparisonResult.match_score,
+        validatedMatchScore,
         comparisonResult.analysis
       );
 
@@ -104,7 +111,7 @@ export class ComparisonService {
         resumeId: resumeData.id,
         jobDescriptionId: jobData.id,
         comparisonId: comparisonData.id,
-        matchScore: comparisonResult.match_score,
+        matchScore: validatedMatchScore,
         report: comparisonResult.analysis,
         resumeFilePath: input.resumeFilePath,
         userRole: input.userRole || null,
@@ -117,7 +124,7 @@ export class ComparisonService {
       return {
         resumeId: resumeData.id,
         jobDescriptionId: jobData.id,
-        matchScore: comparisonResult.match_score,
+        matchScore: validatedMatchScore,
         report: comparisonResult.analysis,
         resumeFilePath: input.resumeFilePath,
         userRole: input.userRole || null,

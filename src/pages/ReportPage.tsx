@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import ReportView from '@/components/report/ReportView';
 import { Button } from '@/components/ui/button';
@@ -18,14 +17,27 @@ const ReportPage = () => {
     companyName: string;
   } | null;
 
+  useEffect(() => {
+    if (state) {
+      console.log("ReportPage received state:", {
+        matchScore: state.matchScore,
+        reportExists: !!state.report,
+        userRole: state.userRole
+      });
+    }
+  }, [state]);
+
   if (!state) {
     return <Navigate to="/" replace />;
   }
 
+  // Ensure match score is a valid number
+  const validMatchScore = typeof state.matchScore === 'number' ? state.matchScore : 0;
+
   // Function to generate PDF content
   const generateReportHTML = () => {
     const report = state.report;
-    const matchScore = state.matchScore;
+    const matchScore = validMatchScore;
 
     // Helper function to format analysis sections
     const formatSection = (title: string, content: string) => {
@@ -277,13 +289,13 @@ const ReportPage = () => {
       </div>
 
       <ReportView
-        matchScore={state.matchScore}
+        matchScore={validMatchScore}
         report={state.report}
         userRole={state.userRole}
         resumeText={state.resumeText}
         jobDescriptionText={state.jobDescriptionText}
-        jobTitle={state.jobTitle}
-        companyName={state.companyName}
+        jobTitle={state.jobTitle || ''}
+        companyName={state.companyName || ''}
       />
     </div>
   );

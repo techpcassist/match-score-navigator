@@ -79,6 +79,41 @@ export const extractBasicKeywords = (text: string): string[] => {
 export const performBasicComparison = (resumeText: string, jobDescriptionText: string, jobTitle?: string, companyName?: string): BasicAnalysisResult => {
   console.log("Using fallback basic analysis method");
   
+  if (!resumeText || !jobDescriptionText) {
+    console.log("Empty resume or job description, returning minimal score");
+    return {
+      match_score: 30, // Default minimum score instead of 0
+      analysis: {
+        keywords: {
+          hard_skills: [],
+          soft_skills: []
+        },
+        ats_checks: [
+          { 
+            check_name: "Basic Analysis", 
+            status: "warning", 
+            message: "Limited text provided for analysis" 
+          }
+        ],
+        suggestions: ["Provide more detailed resume and job description for better analysis"],
+        job_title_analysis: {
+          job_title: jobTitle || "Unknown Position",
+          company_name: companyName || "Unknown Company"
+        },
+        section_analysis: {
+          experience: "Limited text for analysis",
+          education: "Limited text for analysis",
+          skills: "Limited text for analysis",
+          summary: "Limited text for analysis"
+        },
+        parsed_data: {
+          work_experience: [],
+          education: []
+        }
+      }
+    };
+  }
+  
   // Extract keywords from both texts
   const jobKeywords = extractBasicKeywords(jobDescriptionText);
   const resumeKeywords = extractBasicKeywords(resumeText);
@@ -88,7 +123,14 @@ export const performBasicComparison = (resumeText: string, jobDescriptionText: s
     resumeText.toLowerCase().includes(keyword)
   );
   
-  const matchScore = Math.min(100, Math.round((matchedKeywords.length / (jobKeywords.length || 1)) * 100));
+  let matchScore = jobKeywords.length > 0 
+    ? Math.round((matchedKeywords.length / jobKeywords.length) * 100)
+    : 40; // Default score if no keywords found
+  
+  // Ensure valid score between 0-100
+  matchScore = Math.min(100, Math.max(30, matchScore)); // Minimum score of 30
+  
+  console.log(`Basic comparison: Found ${matchedKeywords.length}/${jobKeywords.length} matches. Score: ${matchScore}%`);
   
   // Identify hard skills
   const hardSkills = commonHardSkills.filter(skill => 
