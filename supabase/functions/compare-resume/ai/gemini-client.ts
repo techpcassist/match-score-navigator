@@ -87,8 +87,17 @@ export async function callGenerativeAI(
       const textContent = result.candidates[0].content.parts[0].text;
       
       try {
+        // Clean markdown formatting from the response if present
+        let cleanedText = textContent;
+        
+        // Remove markdown code block formatting if present
+        if (cleanedText.startsWith("```") && cleanedText.endsWith("```")) {
+          cleanedText = cleanedText.replace(/```(json)?\n/g, '').replace(/\n```$/g, '');
+          console.log("Removed markdown code formatting");
+        }
+        
         // Parse the JSON content from the text
-        const jsonContent = JSON.parse(textContent);
+        const jsonContent = JSON.parse(cleanedText);
         return {
           success: true,
           data: jsonContent,
@@ -153,7 +162,16 @@ export async function callGenerativeAI(
         const textContent = result.candidates[0].content.parts[0].text;
         
         try {
-          const jsonContent = JSON.parse(textContent);
+          // Clean markdown formatting from the response if present
+          let cleanedText = textContent;
+          
+          // Remove markdown code block formatting if present
+          if (cleanedText.startsWith("```") && cleanedText.endsWith("```")) {
+            cleanedText = cleanedText.replace(/```(json)?\n/g, '').replace(/\n```$/g, '');
+            console.log("Removed markdown code formatting");
+          }
+          
+          const jsonContent = JSON.parse(cleanedText);
           return {
             success: true,
             data: jsonContent,

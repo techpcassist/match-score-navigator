@@ -64,7 +64,14 @@ serve(async (req) => {
         throw new Error("Invalid response structure from primary model");
       }
       
-      const generatedText = result.candidates[0].content.parts[0].text;
+      // Get the text content
+      let generatedText = result.candidates[0].content.parts[0].text;
+      
+      // Clean markdown formatting if present
+      if (generatedText.startsWith("```") && generatedText.endsWith("```")) {
+        generatedText = generatedText.replace(/```(json|markdown)?\n/g, '').replace(/\n```$/g, '');
+        console.log("Removed markdown formatting from response");
+      }
       
       return new Response(
         JSON.stringify({ generatedText, source: "gemini-1.5-flash" }),
@@ -109,7 +116,14 @@ serve(async (req) => {
           throw new Error("Invalid response structure from fallback model");
         }
         
-        const generatedText = result.candidates[0].content.parts[0].text;
+        // Get the text content
+        let generatedText = result.candidates[0].content.parts[0].text;
+        
+        // Clean markdown formatting if present
+        if (generatedText.startsWith("```") && generatedText.endsWith("```")) {
+          generatedText = generatedText.replace(/```(json|markdown)?\n/g, '').replace(/\n```$/g, '');
+          console.log("Removed markdown formatting from response");
+        }
         
         return new Response(
           JSON.stringify({ generatedText, source: "gemini-1.5-pro" }),
