@@ -49,7 +49,6 @@ export class ComparisonService {
     console.log("Job title:", input.jobTitle || "not specified");
     console.log("Company name:", input.companyName || "not specified");
 
-    // Add a timeout for the entire comparison operation
     let isAIGenerated = true;
     let comparisonResult;
     let comparisonError;
@@ -74,36 +73,22 @@ export class ComparisonService {
     } catch (error) {
       console.error("Error in comparison process:", error);
       comparisonError = error;
-      // Let it fall through to use the fallback
       isAIGenerated = false;
+      throw error; // Let it propagate up to trigger a retry
     }
 
-    // If we don't have a result, generate a basic fallback
-    if (!comparisonResult) {
-      console.log("No comparison result, generating basic fallback");
-      const { performBasicComparison } = await import("../analysis/basic-comparison.ts");
-      comparisonResult = performBasicComparison(
-        input.resumeText,
-        input.jobDescriptionText,
-        input.jobTitle,
-        input.companyName
-      );
-      isAIGenerated = false;
+    // Ensure we have a valid AI-generated result
+    if (!comparisonResult || !isAIGenerated) {
+      console.error("No valid AI comparison result");
+      throw new Error("Failed to get AI analysis");
     }
-
-    // Ensure match_score is a number between 0-100
-    const validatedMatchScore = typeof comparisonResult.match_score === 'number' 
-      ? Math.min(100, Math.max(0, comparisonResult.match_score)) 
-      : 0;
-    
-    console.log("Final match score:", validatedMatchScore, "Original:", comparisonResult.match_score);
 
     try {
-      // Store comparison result
+      // Store comparison result with the exact score from AI
       const comparisonData = await this.dbHandler.storeComparison(
         resumeData.id,
         jobData.id,
-        validatedMatchScore,
+        comparisonResult.match_score,
         comparisonResult.analysis
       );
 
@@ -111,7 +96,7 @@ export class ComparisonService {
         resumeId: resumeData.id,
         jobDescriptionId: jobData.id,
         comparisonId: comparisonData.id,
-        matchScore: validatedMatchScore,
+        matchScore: comparisonResult.match_score,
         report: comparisonResult.analysis,
         resumeFilePath: input.resumeFilePath,
         userRole: input.userRole || null,
@@ -121,20 +106,7 @@ export class ComparisonService {
       };
     } catch (dbError) {
       console.error("Database error in compare-resume function:", dbError);
-      return {
-        resumeId: resumeData.id,
-        jobDescriptionId: jobData.id,
-        matchScore: validatedMatchScore,
-        report: comparisonResult.analysis,
-        resumeFilePath: input.resumeFilePath,
-        userRole: input.userRole || null,
-        jobTitle: input.jobTitle || null,
-        companyName: input.companyName || null,
-        warning: comparisonError ? 
-          `AI service error: ${comparisonError.message}` : 
-          "Existing comparison was retrieved",
-        isAIGenerated
-      };
+      throw dbError; // Propagate the error to trigger a retry
     }
   }
 }
