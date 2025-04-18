@@ -10,7 +10,7 @@ interface ReportViewDetailsProps {
   isMobile?: boolean;
 }
 
-export const ReportViewDetails: React.FC<ReportViewDetailsProps> = ({
+const ReportViewDetails: React.FC<ReportViewDetailsProps> = ({
   report,
   resumeText,
   jobDescriptionText,
